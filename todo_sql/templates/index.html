@@ -502,8 +502,6 @@
             console.error("Ошибка при закреплении заметки:", e);
         }
     }
-        await fetch(`/api/v1/notes/${id}/pin/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-    }
 
     async function toggleCheckbox(itemId, span) {
         // Toggle UI immediately
@@ -562,12 +560,16 @@
         // Populate modal (Reuse logic from Create Form, but populated)
         // Simplified read-only/edit view
         content.innerHTML = `
-            <input type="text" id="edit-title" value="${note.title}" class="w-full text-xl font-medium outline-none mb-4 bg-transparent text-gray-900 dark:text-gray-100" placeholder="Title">
-            <textarea id="edit-content" class="w-full h-64 outline-none resize-none bg-transparent text-gray-800 dark:text-gray-200" placeholder="Note">${note.content}</textarea>
+            <input type="text" id="edit-title" class="w-full text-xl font-medium outline-none mb-4 bg-transparent text-gray-900 dark:text-gray-100" placeholder="Title">
+            <textarea id="edit-content" class="w-full h-64 outline-none resize-none bg-transparent text-gray-800 dark:text-gray-200" placeholder="Note"></textarea>
             <div class="flex justify-end mt-4">
                 <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200" onclick="saveEditedNote(${id})">Done</button>
             </div>
         `;
+
+        document.getElementById('edit-title').value = note.title;
+        document.getElementById('edit-content').value = note.content;
+
         // Apply color
         // content.className = ... map color
 

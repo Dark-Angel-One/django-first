@@ -61,9 +61,15 @@
                     <span class="material-symbols-outlined text-[18px]">restore_from_trash</span>
                 </button>
             {% else %}
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
-                    <span class="material-symbols-outlined text-[18px]">archive</span>
-                </button>
+                {% if note.is_archived %}
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Unarchive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
+                        <span class="material-symbols-outlined text-[18px]">unarchive</span>
+                    </button>
+                {% else %}
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
+                        <span class="material-symbols-outlined text-[18px]">archive</span>
+                    </button>
+                {% endif %}
                 <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote({{ note.id }})">
                     <span class="material-symbols-outlined text-[18px]">delete</span>
                 </button>

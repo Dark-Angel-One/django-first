@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
+from django.urls import reverse
 from .models import Note
 
 class NoteAPITest(TestCase):
@@ -30,3 +31,61 @@ class NoteAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         note.refresh_from_db()
         self.assertTrue(note.is_archived)
+
+class NoteToggleTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='toggleuser', password='password')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.note = Note.objects.create(user=self.user, title="Test Note", content="Content")
+
+    def test_pin_toggle(self):
+        url = reverse('note-pin', args=[self.note.id])
+
+        # Pin
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_pinned'], True)
+        self.note.refresh_from_db()
+        self.assertTrue(self.note.is_pinned)
+
+        # Unpin
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_pinned'], False)
+        self.note.refresh_from_db()
+        self.assertFalse(self.note.is_pinned)
+
+    def test_archive_toggle(self):
+        url = reverse('note-archive', args=[self.note.id])
+
+        # Archive
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_archived'], True)
+        self.note.refresh_from_db()
+        self.assertTrue(self.note.is_archived)
+
+        # Unarchive
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_archived'], False)
+        self.note.refresh_from_db()
+        self.assertFalse(self.note.is_archived)
+
+    def test_trash_toggle(self):
+        url = reverse('note-trash', args=[self.note.id])
+
+        # Trash
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_trashed'], True)
+        self.note.refresh_from_db()
+        self.assertTrue(self.note.is_trashed)
+
+        # Restore
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['is_trashed'], False)
+        self.note.refresh_from_db()
+        self.assertFalse(self.note.is_trashed)
