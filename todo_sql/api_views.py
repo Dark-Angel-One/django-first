@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.db.models import F, Case, When, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Note, Label, ChecklistItem
-from .serializers import NoteSerializer, LabelSerializer
+from .serializers import NoteSerializer, LabelSerializer, ChecklistItemSerializer
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 12
@@ -42,6 +42,7 @@ class NoteViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def trash(self, request, pk=None):
+        # Используем оптимизированный метод с переключением состояния (Toggle)
         updated = Note.objects.filter(pk=pk, user=request.user).update(
             is_trashed=Case(When(is_trashed=True, then=Value(False)), default=Value(True)),
             is_archived=Case(When(is_trashed=False, then=Value(False)), default=F('is_archived'))
@@ -70,3 +71,14 @@ class LabelViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Label.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ChecklistItemViewSet(viewsets.ModelViewSet):
+    serializer_class = ChecklistItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Гарантируем, что пользователь видит только свои пункты списка
+        return ChecklistItem.objects.filter(note__user=self.request.user)
