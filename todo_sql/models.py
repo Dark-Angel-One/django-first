@@ -31,13 +31,13 @@ class Note(models.Model):
     title = models.CharField(max_length=200, blank=True, verbose_name="Заголовок")
     content = models.TextField(verbose_name="Текст заметки", blank=True)
     color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='white', verbose_name="Цвет")
-    is_pinned = models.BooleanField(default=False, verbose_name="Закреплено", db_index=True)
-    is_archived = models.BooleanField(default=False, verbose_name="В архиве", db_index=True)
-    is_trashed = models.BooleanField(default=False, verbose_name="В корзине", db_index=True)
+    is_pinned = models.BooleanField(default=False, verbose_name="Закреплено")
+    is_archived = models.BooleanField(default=False, verbose_name="В архиве")
+    is_trashed = models.BooleanField(default=False, verbose_name="В корзине")
     is_checklist = models.BooleanField(default=False, verbose_name="Режим чек-листа")
     labels = models.ManyToManyField(Label, related_name='notes', blank=True, verbose_name="Метки")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания", db_index=True)
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
     def __str__(self):
         return self.title if self.title else (self.content[:20] if self.content else "Note")
