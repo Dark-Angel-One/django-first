@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список задач</title>
+</head>
+<body>
+
+    <h1>Мои задачи</h1>
+
+ <!-- Вместо формы теперь КНОПКА -->
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'add' %}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 18px;">
+            + Добавить задачу
+        </a>
+    </div>
+
+    <hr>
+
+    <!-- СПИСОК ЗАДАЧ -->
+    <h3>Список:</h3>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <a href="{% url 'delete' task.id %}" style="color: red; text-decoration: none; margin-left: 10px;">
+                    ❌
+                </a>
+                <!-- 2. НОВОЕ: КАРАНДАШИК (Ссылка на edit) -->
+                <!-- margin-left: 10px делает отступ от названия -->
+                <a href="{% url 'edit' task.id %}" style="text-decoration: none; margin-left: 10px;">
+                    ✏️
+                </a>
+                <a href="{% url 'toggle' task.id %}" style="text-decoration: none; color: black; cursor: pointer;">
+
+                <!-- Заголовок и статус -->
+                {% if task.is_completed %}
+                    [V] {{ task.title }}
+                {% else %}
+                    [ ] {{ task.title }}
+                {% endif %}
+                    </a>
+                <!-- 2. ССЫЛКА-УДАЛЕНИЕ (Обернули крестик в ссылку) -->
+                <!-- Важно: </a> ставим ПОСЛЕ крестика -->
+                <a href="{% url 'delete' task.id %}" style="color: red; text-decoration: none; margin-left: 10px;">
+                    ❌
+                </a>
+
+                <!-- Дата создания -->
+                <small>({{ task.created_at|date:"d.m.Y H:i" }})</small> <!--created_at приходят в начало -->
+
+                <!-- Описание, если оно заполнено -->
+                {% if task.description %}
+                    <p>-- {{ task.description }}</p>
+                {% endif %}
+            </li>
+        {% empty %}
+            <li>Список пуст.</li>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>

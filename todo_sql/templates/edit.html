@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактирование</title>
+</head>
+<body>
+
+    <h1>Редактирование задачи ✏️</h1>
+
+    <!-- Выводим старое название, чтобы знать, что правим -->
+    <h3>Вы меняете: "{{ task.title }}"</h3>
+
+    <div style="background-color: #fff3cd; padding: 20px; border-radius: 10px;">
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Django сам подставит старый текст в поля! -->
+            {{ form.as_p }}
+
+            <button type="submit">Сохранить изменения</button>
+        </form>
+    </div>
+
+    <br>
+    <!-- Кнопка отмены -->
+    <a href="{% url 'index' %}"> <-- Вернуться назад (Отмена)</a>
+
+</body>
+</html>
