@@ -118,6 +118,37 @@
             </div>
         {% endfor %}
     </div>
+
+    <!-- Pagination Controls -->
+    {% if is_paginated %}
+    <div class="flex justify-center mt-8 pb-4">
+        <nav class="inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Previous">
+                    <span class="material-symbols-outlined text-xl">chevron_left</span>
+                </a>
+            {% else %}
+                <span class="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+                    <span class="material-symbols-outlined text-xl">chevron_left</span>
+                </span>
+            {% endif %}
+
+            <span class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Next">
+                    <span class="material-symbols-outlined text-xl">chevron_right</span>
+                </a>
+            {% else %}
+                <span class="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+                    <span class="material-symbols-outlined text-xl">chevron_right</span>
+                </span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Edit Modal -->
