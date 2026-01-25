@@ -27,6 +27,7 @@ class NoteListView(LoginRequiredMixin, ListView):
     model = Note
     template_name = 'index.html'
     context_object_name = 'notes'
+    paginate_by = 12
 
     def get_queryset(self):
         queryset = Note.objects.filter(user=self.request.user, is_archived=False, is_trashed=False)
