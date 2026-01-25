@@ -21,8 +21,8 @@ class NoteAPITest(TestCase):
     def test_get_notes(self):
         response = self.client.get('/api/v1/notes/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Assuming no pagination configured in settings
-        self.assertEqual(len(response.data), 1)
+        # Pagination is now enabled
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_archive_note(self):
         note = Note.objects.get()
