@@ -18,6 +18,7 @@ class NoteSerializer(serializers.ModelSerializer):
     label_ids = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Label.objects.all(), write_only=True, source='labels', required=False
     )
+    reminder_date = serializers.DateTimeField(required=False, allow_null=True, input_formats=['%Y-%m-%dT%H:%M', 'iso-8601'])
 
     class Meta:
         model = Note

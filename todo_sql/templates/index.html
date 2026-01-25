@@ -10,10 +10,6 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    .fill-1 { font-variation-settings: 'FILL' 1; }
-</style>
-
 <!-- Create Note Section -->
 {% if active_tab == 'notes' %}
 <div class="flex justify-center mb-8">
@@ -56,11 +52,11 @@
             <div class="flex justify-between items-center mt-4">
                 <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
                     <!-- Color Picker -->
-                     <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Background options">
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Background options" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">palette</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden group-hover:flex border dark:border-gray-700 z-10 flex-wrap w-48">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden menu-dropdown border dark:border-gray-700 z-20 flex-wrap w-48" onclick="event.stopPropagation()">
                             <div class="w-6 h-6 rounded-full bg-white border cursor-pointer" onclick="setFormColor('white')"></div>
                             <div class="w-6 h-6 rounded-full bg-red-200 cursor-pointer" onclick="setFormColor('red')"></div>
                             <div class="w-6 h-6 rounded-full bg-orange-200 cursor-pointer" onclick="setFormColor('orange')"></div>
@@ -79,11 +75,11 @@
                      <input type="hidden" name="is_checklist" id="form-is-checklist" value="false">
 
                      <!-- Label Picker -->
-                     <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Add label">
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Add label" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">label</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-48 max-h-48 overflow-y-auto">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto" onclick="event.stopPropagation()">
                             {% for label in user_labels %}
                             <label class="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                                 <input type="checkbox" name="label_ids" value="{{ label.id }}" class="form-checkbox text-yellow-500 rounded focus:ring-0">
@@ -99,11 +95,11 @@
                      <input type="hidden" name="is_archived" id="form-is-archived" value="false">
 
                      <!-- Reminder Picker -->
-                     <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Remind me">
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Remind me" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">notifications</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-64">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64" onclick="event.stopPropagation()">
                              <input type="datetime-local" id="form-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none">
                         </div>
                      </div>
@@ -190,6 +186,22 @@
         return cookieValue;
     }
     const csrftoken = getCookie('csrftoken');
+
+    // --- Menu Logic ---
+    function toggleMenu(btn) {
+        const menu = btn.nextElementSibling;
+        const isOpen = !menu.classList.contains('hidden');
+        closeAllMenus();
+        if (!isOpen) {
+            menu.classList.remove('hidden');
+        }
+    }
+
+    function closeAllMenus() {
+        document.querySelectorAll('.menu-dropdown').forEach(el => el.classList.add('hidden'));
+    }
+
+    document.addEventListener('click', () => closeAllMenus());
 
     // --- State & DOM ---
     const createNoteCollapsed = document.getElementById('create-note-collapsed');
@@ -440,7 +452,7 @@
 
         return `
         <div class="note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}" data-id="${note.id}">
-            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-10">
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-20">
                 <button onclick="event.stopPropagation(); togglePinNote(${note.id})" class="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300">
                     <span class="material-symbols-outlined text-[20px] ${note.is_pinned ? 'fill-1' : ''}">keep</span>
                 </button>
@@ -597,11 +609,11 @@
             <div class="flex justify-between items-center mt-4">
                 <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
                     <!-- Color -->
-                    <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">palette</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden group-hover:flex border dark:border-gray-700 z-10 flex-wrap w-48">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden menu-dropdown border dark:border-gray-700 z-20 flex-wrap w-48" onclick="event.stopPropagation()">
                              ${['white','red','orange','yellow','green','teal','blue','darkblue','purple','pink','brown','gray'].map(c =>
                                 `<div class="w-6 h-6 rounded-full border cursor-pointer ${getColorClass(c)}" onclick="setEditColor('${c}')"></div>`
                              ).join('')}
@@ -610,11 +622,11 @@
                     <input type="hidden" id="edit-color" value="${note.color}">
 
                     <!-- Labels -->
-                    <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">label</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-48 max-h-48 overflow-y-auto">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto" onclick="event.stopPropagation()">
                             ${labelsHtml}
                         </div>
                     </div>
@@ -626,11 +638,11 @@
                     <input type="hidden" id="edit-is-archived" value="${note.is_archived}">
 
                     <!-- Reminder -->
-                    <div class="relative group">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
                             <span class="material-symbols-outlined text-[18px]">notifications</span>
                         </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-64">
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64" onclick="event.stopPropagation()">
                              <input type="datetime-local" id="edit-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none" value="${reminderVal}">
                         </div>
                     </div>
