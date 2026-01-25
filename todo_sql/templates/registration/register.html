@@ -1,32 +1,54 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Notes</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'keep-bg': '#ffffff',
+                        'keep-bg-dark': '#202124',
+                    }
+                }
+            }
+        }
+        // Init Theme
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Create Account</h2>
+<body class="bg-gray-100 dark:bg-keep-bg-dark flex items-center justify-center h-screen transition-colors">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Create Account</h2>
         <form method="post" class="space-y-4">
             {% csrf_token %}
 
             {% for field in form %}
             <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ field.id_for_label }}">
+                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="{{ field.id_for_label }}">
                     {{ field.label }}
                 </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline {% if field.errors %}border-red-500{% endif %}"
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-900 leading-tight focus:outline-none focus:shadow-outline {% if field.errors %}border-red-500{% endif %}"
                        id="{{ field.id_for_label }}"
                        name="{{ field.name }}"
                        type="{{ field.field.widget.input_type }}"
+                       value="{% if field.name != 'password' and field.name != 'password1' and field.name != 'password2' %}{{ field.value|default:'' }}{% endif %}"
                        {% if field.field.required %}required{% endif %}>
                 {% if field.errors %}
                     <p class="text-red-500 text-xs italic">{{ field.errors.0 }}</p>
                 {% endif %}
                 {% if field.help_text %}
-                    <p class="text-gray-600 text-xs mt-1">{{ field.help_text }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">{{ field.help_text }}</p>
                 {% endif %}
             </div>
             {% endfor %}
@@ -35,8 +57,8 @@
                 Register
             </button>
         </form>
-        <p class="mt-4 text-center text-gray-600 text-sm">
-            Already have an account? <a href="{% url 'login' %}" class="text-blue-500 hover:text-blue-700">Login</a>
+        <p class="mt-4 text-center text-gray-600 dark:text-gray-400 text-sm">
+            Already have an account? <a href="{% url 'login' %}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">Login</a>
         </p>
     </div>
 </body>

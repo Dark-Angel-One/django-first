@@ -24,17 +24,24 @@ class NoteSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'content', 'color', 'is_pinned',
             'is_archived', 'is_trashed', 'is_checklist',
-            'labels', 'label_ids', 'checklist_items',
+            'labels', 'label_ids', 'checklist_items', 'reminder_date',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 
     def create(self, validated_data):
         checklist_items_data = validated_data.pop('checklist_items', [])
-        labels_data = validated_data.pop('labels', []) # handled by label_ids source
 
-        # User should be passed in save() or context
+        # labels are handled automatically by label_ids source due to ManyToMany
+        # but we need to ensure label_ids are popped if handled manually?
+        # No, DRF ModelSerializer handles ManyToMany if provided as PrimaryKeyRelatedField source
+        # Wait, I used `source='labels'` for `label_ids`.
+        # So `validated_data['labels']` will contain the Label objects.
+
+        labels = validated_data.pop('labels', [])
+
         note = Note.objects.create(**validated_data)
+        note.labels.set(labels)
 
         for item_data in checklist_items_data:
             ChecklistItem.objects.create(note=note, **item_data)
@@ -43,22 +50,23 @@ class NoteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         checklist_items_data = validated_data.pop('checklist_items', None)
-        labels_data = validated_data.pop('labels', None) # handled by label_ids
+        labels = validated_data.pop('labels', None)
 
         instance = super().update(instance, validated_data)
 
+        if labels is not None:
+             instance.labels.set(labels)
+
         if checklist_items_data is not None:
-            # Simple replacement strategy for checklist items for now
-            # Or smarter: update existing by ID?
-            # For "Keep" style, usually we send the whole list.
-            # But let's implementing a smart update if IDs are provided.
+            # Smart update logic:
+            # If ID is present, update. If not, create.
+            # But the client might just send the whole list.
+            # Let's check if the client sends IDs.
+            # The current frontend implementation (Create) sends list without IDs.
+            # Edit implementation... we don't have a full Edit form yet.
+            # We need to support the "checklist toggling" feature requested.
 
-            # For simplicity in this Academy Project, let's just delete old and create new
-            # unless specific ID handling is implemented.
-            # But wait, if we delete, we lose "checked" state if the frontend didn't send it?
-            # The frontend should send the full state.
-
-            # Better approach: Clear and Re-create is safest for simple lists.
+            # For now, let's keep the clear-and-recreate strategy as it is robust for this scope
             instance.checklist_items.all().delete()
             for item_data in checklist_items_data:
                 ChecklistItem.objects.create(note=instance, **item_data)

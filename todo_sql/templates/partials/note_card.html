@@ -18,7 +18,7 @@
             <ul class="space-y-1">
                 {% for item in note.checklist_items.all|slice:":5" %}
                     <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
-                        <span class="material-symbols-outlined text-[18px] text-gray-400">
+                        <span class="material-symbols-outlined text-[18px] text-gray-400 cursor-pointer" onclick="event.stopPropagation(); toggleCheckbox({{ item.id }}, this)">
                             {% if item.is_checked %}check_box{% else %}check_box_outline_blank{% endif %}
                         </span>
                         <span class="{% if item.is_checked %}line-through text-gray-500{% endif %} break-all">{{ item.text }}</span>
@@ -30,6 +30,15 @@
             </ul>
         {% else %}
             <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden">{{ note.content|truncatechars:300 }}</p>
+        {% endif %}
+
+        {% if note.reminder_date %}
+        <div class="mt-2">
+             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
+                <span class="material-symbols-outlined text-[14px] mr-1">schedule</span>
+                {{ note.reminder_date|date:"M j, H:i" }}
+             </span>
+        </div>
         {% endif %}
 
         {% if note.labels.all %}
@@ -44,12 +53,21 @@
     <!-- Hover Actions -->
     <div class="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8">
         <div class="flex gap-1">
-            <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
-                <span class="material-symbols-outlined text-[18px]">archive</span>
-            </button>
-            <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote({{ note.id }})">
-                <span class="material-symbols-outlined text-[18px]">delete</span>
-            </button>
+            {% if note.is_trashed %}
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Delete Forever" onclick="event.stopPropagation(); deleteNoteForever({{ note.id }})">
+                    <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+                </button>
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Restore" onclick="event.stopPropagation(); trashNote({{ note.id }})">
+                    <span class="material-symbols-outlined text-[18px]">restore_from_trash</span>
+                </button>
+            {% else %}
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
+                    <span class="material-symbols-outlined text-[18px]">archive</span>
+                </button>
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote({{ note.id }})">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -36,6 +36,7 @@ class Note(models.Model):
     is_trashed = models.BooleanField(default=False, verbose_name="В корзине")
     is_checklist = models.BooleanField(default=False, verbose_name="Режим чек-листа")
     labels = models.ManyToManyField(Label, related_name='notes', blank=True, verbose_name="Метки")
+    reminder_date = models.DateTimeField(null=True, blank=True, verbose_name="Напоминание")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 

@@ -97,6 +97,16 @@
                         <span class="material-symbols-outlined text-[18px]">archive</span>
                      </button>
                      <input type="hidden" name="is_archived" id="form-is-archived" value="false">
+
+                     <!-- Reminder Picker -->
+                     <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Remind me">
+                            <span class="material-symbols-outlined text-[18px]">notifications</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-64">
+                             <input type="datetime-local" id="form-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none">
+                        </div>
+                     </div>
                 </div>
                 <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="closeCreateNote()">Close</button>
             </div>
@@ -187,6 +197,7 @@
         const isPinned = document.getElementById('form-is-pinned').value === 'true';
         const isArchived = document.getElementById('form-is-archived').value === 'true';
         const isChecklist = document.getElementById('form-is-checklist').value === 'true';
+        const reminderDate = document.getElementById('form-reminder-date').value;
 
         let checklistItems = [];
         if (isChecklist) {
@@ -208,7 +219,8 @@
         if (title || content || checklistItems.length > 0) {
             saveNote({
                 title, content, color, is_pinned: isPinned, is_archived: isArchived,
-                is_checklist: isChecklist, checklist_items: checklistItems, label_ids: labelIds
+                is_checklist: isChecklist, checklist_items: checklistItems, label_ids: labelIds,
+                reminder_date: reminderDate || null
             });
         }
 
@@ -222,6 +234,7 @@
         // Reset Pin/Archive icons
         document.querySelector('.icon-pin').classList.remove('fill-1');
         document.getElementById('form-is-pinned').value = 'false';
+        document.getElementById('form-reminder-date').value = '';
 
         createNoteCollapsed.classList.remove('hidden');
         createNoteForm.classList.add('hidden');
@@ -414,24 +427,55 @@
 
     async function trashNote(id) {
         await fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-        document.querySelector(`.note-card[data-id="${id}"]`).remove();
+        const card = document.querySelector(`.note-card[data-id="${id}"]`);
+        if(card) card.remove();
+    }
+
+    async function deleteNoteForever(id) {
+        await fetch(`/api/v1/notes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': csrftoken} });
+        const card = document.querySelector(`.note-card[data-id="${id}"]`);
+        if(card) card.remove();
     }
 
     async function togglePinNote(id) {
         const res = await fetch(`/api/v1/notes/${id}/pin/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
         const data = await res.json();
-        // Update UI locally
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        const pinIcon = card.querySelector('.material-symbols-outlined'); // Pin is first one usually, or use selector
-        // My selector in createNoteCardHTML is specific for pin button
-        const pinBtnIcon = card.querySelector('button[onclick*="togglePinNote"] span');
+        // Find pin button in this card
+        const pinBtnIcon = card.querySelector('button span.material-symbols-outlined:not(.text-gray-600)'); // Heuristic
+        // Better selector: find button with onclick togglePinNote
+        // Note: the template generates togglePinNote(ID)
+        // But since we are inside `card`, we can just look for the pin icon structure.
+
+        // Re-selecting more precisely:
+        const pinContainer = card.querySelector('.absolute.top-2.right-2');
+        const pinSpan = pinContainer.querySelector('span');
+
         if(data.is_pinned) {
-            pinBtnIcon.classList.add('fill-1');
-            card.querySelector('.absolute').classList.add('opacity-100');
+            pinSpan.classList.add('fill-1');
+            pinContainer.classList.add('opacity-100');
         } else {
-            pinBtnIcon.classList.remove('fill-1');
-            card.querySelector('.absolute').classList.remove('opacity-100');
+            pinSpan.classList.remove('fill-1');
+            pinContainer.classList.remove('opacity-100');
         }
+    }
+
+    async function toggleCheckbox(itemId, span) {
+        // Toggle UI immediately
+        const isChecked = span.textContent.trim() === 'check_box';
+        const newStatus = !isChecked;
+
+        span.textContent = newStatus ? 'check_box' : 'check_box_outline_blank';
+        const textSpan = span.nextElementSibling;
+        if(newStatus) textSpan.classList.add('line-through', 'text-gray-500');
+        else textSpan.classList.remove('line-through', 'text-gray-500');
+
+        // Call API
+        await fetch(`/api/v1/checklist-items/${itemId}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify({is_checked: newStatus})
+        });
     }
 
     // --- Live Search ---

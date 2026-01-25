@@ -7,6 +7,7 @@ from . import api_views
 router = DefaultRouter()
 router.register(r'notes', api_views.NoteViewSet, basename='note')
 router.register(r'labels', api_views.LabelViewSet, basename='label')
+router.register(r'checklist-items', api_views.ChecklistItemViewSet, basename='checklist-item')
 
 urlpatterns = [
     path('', views.NoteListView.as_view(), name='index'),
