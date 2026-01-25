@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import F, Case, When, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Note, Label, ChecklistItem
 from .serializers import NoteSerializer, LabelSerializer
@@ -30,30 +31,35 @@ class NoteViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def archive(self, request, pk=None):
-        note = self.get_object()
-        note.is_archived = not note.is_archived
-        if note.is_archived:
-            note.is_trashed = False
-        note.save(update_fields=['is_archived', 'is_trashed'])
-        return Response({'status': 'archived' if note.is_archived else 'unarchived', 'is_archived': note.is_archived})
+        # Используем оптимизированный метод обновления (без лишнего запроса в БД)
+        updated = Note.objects.filter(pk=pk, user=request.user).update(
+            is_archived=Case(When(is_archived=True, then=Value(False)), default=Value(True)),
+            is_trashed=Case(When(is_archived=False, then=Value(False)), default=F('is_trashed'))
+        )
+        if updated == 0:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'status': 'toggled'})
 
     @action(detail=True, methods=['post'])
     def trash(self, request, pk=None):
-        note = self.get_object()
-        note.is_trashed = not note.is_trashed
-        if note.is_trashed:
-            note.is_archived = False
-        note.save(update_fields=['is_trashed', 'is_archived'])
-        return Response({'status': 'trashed' if note.is_trashed else 'restored', 'is_trashed': note.is_trashed})
+        updated = Note.objects.filter(pk=pk, user=request.user).update(
+            is_trashed=Case(When(is_trashed=True, then=Value(False)), default=Value(True)),
+            is_archived=Case(When(is_trashed=False, then=Value(False)), default=F('is_archived'))
+        )
+        if updated == 0:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'status': 'toggled'})
 
     @action(detail=True, methods=['post'])
     def pin(self, request, pk=None):
-        note = self.get_object()
-        note.is_pinned = not note.is_pinned
-        note.save(update_fields=['is_pinned'])
-        return Response({'status': 'pinned' if note.is_pinned else 'unpinned', 'is_pinned': note.is_pinned})
+        updated = Note.objects.filter(pk=pk, user=request.user).update(
+            is_pinned=Case(When(is_pinned=True, then=Value(False)), default=Value(True))
+        )
+        if updated == 0:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'status': 'toggled'})
 
-    @action(detail=False, methods=['post']) # Changed to POST for safety, though DELETE is semantic
+    @action(detail=False, methods=['post'])
     def empty_trash(self, request):
         count, _ = Note.objects.filter(user=request.user, is_trashed=True).delete()
         return Response({'status': 'trash emptied', 'deleted_count': count})
@@ -64,6 +70,3 @@ class LabelViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Label.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)

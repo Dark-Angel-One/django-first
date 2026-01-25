@@ -449,20 +449,21 @@
     }
 
     async function togglePinNote(id) {
-        const res = await fetch(`/api/v1/notes/${id}/pin/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-        const data = await res.json();
-        // Update UI locally
+        // Optimistic UI Update
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        const pinIcon = card.querySelector('.material-symbols-outlined'); // Pin is first one usually, or use selector
-        // My selector in createNoteCardHTML is specific for pin button
         const pinBtnIcon = card.querySelector('button[onclick*="togglePinNote"] span');
-        if(data.is_pinned) {
+        const isPinned = pinBtnIcon.classList.contains('fill-1');
+
+        // Toggle state visually
+        if (!isPinned) {
             pinBtnIcon.classList.add('fill-1');
             card.querySelector('.absolute').classList.add('opacity-100');
         } else {
             pinBtnIcon.classList.remove('fill-1');
             card.querySelector('.absolute').classList.remove('opacity-100');
         }
+
+        await fetch(`/api/v1/notes/${id}/pin/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
     }
 
     // --- Live Search ---
