@@ -38,7 +38,9 @@ class NoteViewSet(viewsets.ModelViewSet):
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response({'status': 'toggled'})
+
+        note = Note.objects.get(pk=pk)
+        return Response({'is_archived': note.is_archived, 'is_trashed': note.is_trashed})
 
     @action(detail=True, methods=['post'])
     def trash(self, request, pk=None):
@@ -49,7 +51,9 @@ class NoteViewSet(viewsets.ModelViewSet):
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response({'status': 'toggled'})
+
+        note = Note.objects.get(pk=pk)
+        return Response({'is_trashed': note.is_trashed, 'is_archived': note.is_archived})
 
     @action(detail=True, methods=['post'])
     def pin(self, request, pk=None):
@@ -58,7 +62,9 @@ class NoteViewSet(viewsets.ModelViewSet):
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response({'status': 'toggled'})
+
+        note = Note.objects.get(pk=pk)
+        return Response({'is_pinned': note.is_pinned})
 
     @action(detail=False, methods=['post'])
     def empty_trash(self, request):
