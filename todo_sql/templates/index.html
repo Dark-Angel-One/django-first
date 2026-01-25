@@ -1,189 +1,509 @@
 {% extends 'base.html' %}
 
-{% block search %}
-<form method="GET" action="{% url 'index' %}" class="search-bar">
-    <button type="submit" style="border:none; background:none; cursor:pointer;">
-        <svg focusable="false" height="24px" viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"><path d="M20.49,19l-5.73-5.73C15.53,12.2,16,10.91,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5C3,13.09,5.91,16,9.5,16 c1.41,0,2.7-0.47,3.77-1.24L19,20.51L20.49,19z M5,9.5C5,7.01,7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14S5,11.99,5,9.5z"></path></svg>
-    </button>
-    <input type="text" name="q" placeholder="Search" value="{{ request.GET.q|default:'' }}">
-</form>
+{% block search_bar %}
+<div class="relative group">
+   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+       <span class="material-symbols-outlined text-gray-500">search</span>
+   </div>
+   <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Search">
+</div>
 {% endblock %}
 
 {% block content %}
-<div class="create-note-container">
-    <div id="create-note-placeholder" class="create-note-placeholder">
-        Take a note...
-    </div>
-    <form id="create-note-form" class="create-note-form">
-        {% csrf_token %}
-        <input type="text" name="title" class="note-input note-title-input" placeholder="Title">
-        <textarea name="content" class="note-input note-content-input" placeholder="Take a note..." rows="1"></textarea>
+<style>
+    .fill-1 { font-variation-settings: 'FILL' 1; }
+</style>
 
-        <!-- Hidden inputs for color and pinned -->
-        <input type="hidden" name="color" id="id_color" value="white">
-        <input type="checkbox" name="is_pinned" id="id_is_pinned" style="display:none;">
-
-        <div class="color-options">
-            {% for code, name in form.fields.color.choices %}
-                <div class="color-circle {% if code == 'white' %}selected{% endif %}"
-                     data-color="{{ code }}"
-                     style="background-color: {% if code == 'white' %}#fff{% elif code == 'red' %}#f28b82{% elif code == 'orange' %}#fbbc04{% elif code == 'yellow' %}#fff475{% elif code == 'green' %}#ccff90{% elif code == 'teal' %}#a7ffeb{% elif code == 'blue' %}#cbf0f8{% elif code == 'darkblue' %}#aecbfa{% elif code == 'purple' %}#d7aefb{% elif code == 'pink' %}#fdcfe8{% elif code == 'brown' %}#e6c9a8{% elif code == 'gray' %}#e8eaed{% endif %};"
-                     title="{{ name }}"></div>
-            {% endfor %}
-        </div>
-
-        <div class="form-actions">
-            <button type="button" id="close-note-form" class="btn-close">Close</button>
-            <button type="submit" class="btn-save">Save</button>
-        </div>
-    </form>
-</div>
-
-<div class="notes-grid" id="notes-grid">
-    {% for note in notes %}
-        <div class="note-card note-{{ note.color }} {% if note.is_pinned %}pinned{% endif %}">
-            {% if note.is_pinned %}
-                <div class="pin-icon">📌</div>
-            {% endif %}
-
-            {% if note.title %}
-                <h3>{{ note.title }}</h3>
-            {% endif %}
-            <p>{{ note.content|linebreaksbr }}</p>
-
-            <div class="note-actions">
-                <a href="{% url 'edit' note.id %}" class="icon-btn" title="Edit">✏️</a>
-                <a href="{% url 'delete' note.id %}" class="icon-btn" title="Delete">🗑️</a>
+<!-- Create Note Section -->
+{% if active_tab == 'notes' %}
+<div class="flex justify-center mb-8">
+    <div class="w-full max-w-2xl relative">
+        <!-- Collapsed State -->
+        <div id="create-note-collapsed" class="bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-md p-3 text-gray-500 font-medium cursor-text flex justify-between items-center transition-all" onclick="showCreateNote()">
+            <span>Take a note...</span>
+            <div class="flex gap-2 text-gray-500">
+                <button class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="New List" onclick="event.stopPropagation(); showCreateNote(true);">
+                    <span class="material-symbols-outlined">check_box</span>
+                </button>
             </div>
         </div>
-    {% empty %}
-        <p style="text-align: center; color: #5f6368; grid-column: 1/-1;">No notes yet.</p>
-    {% endfor %}
+
+        <!-- Expanded Form -->
+        <form id="create-note-form" class="hidden bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 transition-all relative">
+            <div class="flex justify-between items-start mb-2">
+                <input type="text" name="title" placeholder="Title" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
+                <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="togglePinForm(this)">
+                    <span class="material-symbols-outlined icon-pin">keep</span>
+                </button>
+                <input type="hidden" name="is_pinned" id="form-is-pinned" value="false">
+            </div>
+
+            <!-- Text Content -->
+            <textarea name="content" id="note-content-input" placeholder="Take a note..." class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
+
+            <!-- Checklist Content (Hidden by default) -->
+            <div id="checklist-container" class="hidden space-y-2 mb-2">
+                <div id="checklist-items-form">
+                    <!-- Items go here -->
+                </div>
+                <div class="flex items-center gap-2 text-gray-500 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded" onclick="addChecklistItemInput()">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span class="text-sm">List item</span>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex justify-between items-center mt-4">
+                <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
+                    <!-- Color Picker -->
+                     <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Background options">
+                            <span class="material-symbols-outlined text-[18px]">palette</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden group-hover:flex border dark:border-gray-700 z-10 flex-wrap w-48">
+                            <div class="w-6 h-6 rounded-full bg-white border cursor-pointer" onclick="setFormColor('white')"></div>
+                            <div class="w-6 h-6 rounded-full bg-red-200 cursor-pointer" onclick="setFormColor('red')"></div>
+                            <div class="w-6 h-6 rounded-full bg-orange-200 cursor-pointer" onclick="setFormColor('orange')"></div>
+                            <div class="w-6 h-6 rounded-full bg-yellow-200 cursor-pointer" onclick="setFormColor('yellow')"></div>
+                            <div class="w-6 h-6 rounded-full bg-green-200 cursor-pointer" onclick="setFormColor('green')"></div>
+                            <div class="w-6 h-6 rounded-full bg-teal-200 cursor-pointer" onclick="setFormColor('teal')"></div>
+                            <div class="w-6 h-6 rounded-full bg-blue-200 cursor-pointer" onclick="setFormColor('blue')"></div>
+                            <div class="w-6 h-6 rounded-full bg-indigo-200 cursor-pointer" onclick="setFormColor('darkblue')"></div>
+                            <div class="w-6 h-6 rounded-full bg-purple-200 cursor-pointer" onclick="setFormColor('purple')"></div>
+                            <div class="w-6 h-6 rounded-full bg-pink-200 cursor-pointer" onclick="setFormColor('pink')"></div>
+                            <div class="w-6 h-6 rounded-full bg-amber-200 cursor-pointer" onclick="setFormColor('brown')"></div>
+                            <div class="w-6 h-6 rounded-full bg-gray-200 cursor-pointer" onclick="setFormColor('gray')"></div>
+                        </div>
+                     </div>
+                     <input type="hidden" name="color" id="form-color" value="white">
+                     <input type="hidden" name="is_checklist" id="form-is-checklist" value="false">
+
+                     <!-- Label Picker -->
+                     <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Add label">
+                            <span class="material-symbols-outlined text-[18px]">label</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-48 max-h-48 overflow-y-auto">
+                            {% for label in user_labels %}
+                            <label class="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="label_ids" value="{{ label.id }}" class="form-checkbox text-yellow-500 rounded focus:ring-0">
+                                <span class="text-sm text-gray-800 dark:text-gray-200 truncate">{{ label.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                     </div>
+
+                     <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Archive" onclick="toggleArchiveForm(this)">
+                        <span class="material-symbols-outlined text-[18px]">archive</span>
+                     </button>
+                     <input type="hidden" name="is_archived" id="form-is-archived" value="false">
+                </div>
+                <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="closeCreateNote()">Close</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes Grid -->
+<div class="p-4">
+    <div class="bento-grid" id="notes-grid">
+        {% for note in notes %}
+             {% include 'partials/note_card.html' with note=note %}
+        {% empty %}
+            <!-- Handled by JS or Initial View -->
+            <div id="empty-state" class="col-span-full text-center text-gray-500 py-10 w-full">
+                <span class="material-symbols-outlined text-6xl opacity-50">lightbulb</span>
+                <p class="mt-2 text-lg">Notes you add appear here</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm" onclick="closeEditModal(event)">
+    <div class="bg-white dark:bg-keep-bg-dark rounded-lg shadow-xl w-full max-w-2xl p-4 relative mx-4 transition-colors" id="edit-modal-content" onclick="event.stopPropagation()">
+        <!-- Dynamic Content -->
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const placeholder = document.getElementById('create-note-placeholder');
-    const form = document.getElementById('create-note-form');
-    const closeBtn = document.getElementById('close-note-form');
-    const colorCircles = document.querySelectorAll('.color-circle');
-    const colorInput = document.getElementById('id_color');
-    const grid = document.getElementById('notes-grid');
+    // --- CSRF Token Helper ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
 
-    // Toggle Form
-    placeholder.addEventListener('click', () => {
-        placeholder.style.display = 'none';
-        form.style.display = 'block';
-        document.querySelector('.note-content-input').focus();
-    });
+    // --- State & DOM ---
+    const createNoteCollapsed = document.getElementById('create-note-collapsed');
+    const createNoteForm = document.getElementById('create-note-form');
+    const notesGrid = document.getElementById('notes-grid');
+    const emptyState = document.getElementById('empty-state');
+    const globalSearch = document.getElementById('global-search');
 
-    closeBtn.addEventListener('click', () => {
-        placeholder.style.display = 'block';
-        form.style.display = 'none';
-    });
+    // --- Create Note Logic ---
+    function showCreateNote(isChecklist = false) {
+        createNoteCollapsed.classList.add('hidden');
+        createNoteForm.classList.remove('hidden');
 
-    // Color Selection
-    colorCircles.forEach(circle => {
-        circle.addEventListener('click', () => {
-            colorCircles.forEach(c => c.classList.remove('selected'));
-            circle.classList.add('selected');
-            colorInput.value = circle.dataset.color;
-            form.style.backgroundColor = getComputedStyle(circle).backgroundColor;
-        });
-    });
+        const checklistContainer = document.getElementById('checklist-container');
+        const contentInput = document.getElementById('note-content-input');
+        const isChecklistInput = document.getElementById('form-is-checklist');
 
-    // AJAX Submission
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+        if (isChecklist) {
+            checklistContainer.classList.remove('hidden');
+            contentInput.classList.add('hidden');
+            isChecklistInput.value = 'true';
+            // Add one item if empty
+            if (document.getElementById('checklist-items-form').children.length === 0) {
+                addChecklistItemInput();
+            }
+        } else {
+            checklistContainer.classList.add('hidden');
+            contentInput.classList.remove('hidden');
+            isChecklistInput.value = 'false';
+            contentInput.focus();
+        }
+    }
 
-        // Simple manual object construction
-        const payload = {
-            title: form.querySelector('[name="title"]').value,
-            content: form.querySelector('[name="content"]').value,
-            color: colorInput.value,
-            is_pinned: false // Default
+    function closeCreateNote() {
+        // Collect data
+        const title = createNoteForm.querySelector('[name="title"]').value.trim();
+        const content = createNoteForm.querySelector('[name="content"]').value.trim();
+        const color = document.getElementById('form-color').value;
+        const isPinned = document.getElementById('form-is-pinned').value === 'true';
+        const isArchived = document.getElementById('form-is-archived').value === 'true';
+        const isChecklist = document.getElementById('form-is-checklist').value === 'true';
+
+        let checklistItems = [];
+        if (isChecklist) {
+            document.querySelectorAll('.checklist-item-input').forEach((input, index) => {
+                if (input.value.trim()) {
+                    checklistItems.push({
+                        text: input.value.trim(),
+                        is_checked: input.dataset.checked === 'true',
+                        order: index
+                    });
+                }
+            });
+        }
+
+        const labelCheckboxes = createNoteForm.querySelectorAll('input[name="label_ids"]:checked');
+        const labelIds = Array.from(labelCheckboxes).map(cb => parseInt(cb.value));
+
+        // Only save if not empty
+        if (title || content || checklistItems.length > 0) {
+            saveNote({
+                title, content, color, is_pinned: isPinned, is_archived: isArchived,
+                is_checklist: isChecklist, checklist_items: checklistItems, label_ids: labelIds
+            });
+        }
+
+        // Reset UI
+        createNoteForm.reset();
+        // Uncheck labels
+        createNoteForm.querySelectorAll('input[name="label_ids"]').forEach(cb => cb.checked = false);
+        document.getElementById('checklist-items-form').innerHTML = '';
+        createNoteForm.style.backgroundColor = ''; // Reset color
+        document.getElementById('form-color').value = 'white';
+        // Reset Pin/Archive icons
+        document.querySelector('.icon-pin').classList.remove('fill-1');
+        document.getElementById('form-is-pinned').value = 'false';
+
+        createNoteCollapsed.classList.remove('hidden');
+        createNoteForm.classList.add('hidden');
+    }
+
+    function togglePinForm(btn) {
+        const input = document.getElementById('form-is-pinned');
+        const icon = btn.querySelector('.material-symbols-outlined');
+        const isPinned = input.value === 'true';
+        input.value = !isPinned;
+        icon.classList.toggle('fill-1');
+    }
+
+    function toggleArchiveForm(btn) {
+        const input = document.getElementById('form-is-archived');
+        input.value = input.value === 'true' ? 'false' : 'true';
+        btn.classList.toggle('text-gray-900'); // Simple visual feedback
+    }
+
+    function setFormColor(color) {
+        document.getElementById('form-color').value = color;
+        // Map color to tailwind class for preview
+        const colorMap = {
+            'white': '#ffffff', 'red': '#fecaca', 'orange': '#fed7aa', 'yellow': '#fef08a',
+            'green': '#bbf7d0', 'teal': '#99f6e4', 'blue': '#bfdbfe', 'darkblue': '#c7d2fe',
+            'purple': '#e9d5ff', 'pink': '#fbcfe8', 'brown': '#fcd34d', 'gray': '#e5e7eb'
+        };
+        // We use inline style for the form background to match easily
+        // But for dark mode we need to be careful. simpler to just use classes?
+        // createNoteForm classList replace logic is tedious. Inline style is okay-ish but not persistent with tailwind dark mode classes logic.
+        // Let's rely on mapping.
+
+        // Remove existing bg classes?
+        createNoteForm.className = createNoteForm.className.replace(/bg-\w+-\d+/g, '');
+        // Actually the form has `bg-white dark:bg-keep-bg-dark`
+        // We override via style for simplicity or map classes.
+        // Let's use specific classes map.
+        const tailwindClassMap = {
+            'white': 'bg-white', 'red': 'bg-red-100', 'orange': 'bg-orange-100', 'yellow': 'bg-yellow-100',
+            'green': 'bg-green-100', 'teal': 'bg-teal-100', 'blue': 'bg-blue-100', 'darkblue': 'bg-indigo-100',
+            'purple': 'bg-purple-100', 'pink': 'bg-pink-100', 'brown': 'bg-amber-100', 'gray': 'bg-gray-100'
+        };
+        const tailwindDarkClassMap = {
+            'white': 'dark:bg-keep-bg-dark', 'red': 'dark:bg-red-900', 'orange': 'dark:bg-orange-900',
+            'yellow': 'dark:bg-yellow-900', 'green': 'dark:bg-green-900', 'teal': 'dark:bg-teal-900',
+            'blue': 'dark:bg-blue-900', 'darkblue': 'dark:bg-indigo-900', 'purple': 'dark:bg-purple-900',
+            'pink': 'dark:bg-pink-900', 'brown': 'dark:bg-amber-900', 'gray': 'dark:bg-gray-800'
         };
 
+        // Remove old color classes (this is tricky regex, simplified: just reset base)
+        createNoteForm.classList.remove('bg-white', 'dark:bg-keep-bg-dark');
+        // Remove all potential color classes
+        const allColors = Object.values(tailwindClassMap).concat(Object.values(tailwindDarkClassMap));
+        createNoteForm.classList.remove(...allColors);
+
+        createNoteForm.classList.add(tailwindClassMap[color], tailwindDarkClassMap[color]);
+    }
+
+    function addChecklistItemInput(value = '', isChecked = false) {
+        const container = document.getElementById('checklist-items-form');
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2';
+        div.innerHTML = `
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer" onclick="this.textContent = this.textContent === 'check_box' ? 'check_box_outline_blank' : 'check_box'; this.nextElementSibling.dataset.checked = this.textContent === 'check_box';">
+                ${isChecked ? 'check_box' : 'check_box_outline_blank'}
+            </span>
+            <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300" placeholder="List item" value="${value}" data-checked="${isChecked}" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addChecklistItemInput(); this.parentElement.nextElementSibling.querySelector('input').focus(); }">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600" onclick="this.parentElement.remove()">close</span>
+        `;
+        container.appendChild(div);
+        // Focus the new input
+        if (!value) div.querySelector('input').focus();
+    }
+
+    // --- API Calls ---
+
+    async function saveNote(data) {
         try {
-            const response = await fetch("{% url 'create_note_ajax' %}", {
+            const res = await fetch('/api/v1/notes/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': csrftoken
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(data)
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const n = result.note;
-                const card = document.createElement('div');
-                card.className = `note-card note-${n.color} ${n.is_pinned ? 'pinned' : ''}`;
-
-                let html = '';
-                if (n.is_pinned) {
-                    html += '<div class="pin-icon">📌</div>';
-                }
-                if (n.title) {
-                    html += `<h3>${n.title}</h3>`;
-                }
-
-                // Simple XSS protection for content: we trust the user input generally in this scope,
-                // but textContent is safer. However, we want <br> for newlines.
-                // Let's escape HTML entities then replace newlines.
-                const escapeHtml = (text) => {
-                    const div = document.createElement('div');
-                    div.textContent = text;
-                    return div.innerHTML;
-                };
-
-                const contentHtml = escapeHtml(n.content).replace(/\n/g, '<br>');
-                html += `<p>${contentHtml}</p>`;
-
-                // Hardcoded URL patterns based on urls.py structure
-                html += `
-                    <div class="note-actions">
-                        <a href="/edit/${n.id}/" class="icon-btn" title="Edit">✏️</a>
-                        <a href="/delete/${n.id}/" class="icon-btn" title="Delete">🗑️</a>
-                    </div>
-                `;
-
-                card.innerHTML = html;
-
-                // Prepend to grid
-                grid.prepend(card);
-
-                // Clear and close form
-                form.reset();
-                colorInput.value = 'white';
-                form.style.backgroundColor = '#fff';
-                colorCircles.forEach(c => c.classList.remove('selected'));
-                // Select white again
-                const whiteCircle = document.querySelector('.color-circle[data-color="white"]');
-                if (whiteCircle) whiteCircle.classList.add('selected');
-
-                placeholder.style.display = 'block';
-                form.style.display = 'none';
-
-                // Remove "No notes yet" message if present
-                const emptyMsg = Array.from(grid.children).find(c => c.tagName === 'P' && c.textContent.includes('No notes yet'));
-                if (emptyMsg) emptyMsg.remove();
-
+            if (res.ok) {
+                const note = await res.json();
+                prependNoteToGrid(note);
             } else {
-                alert('Error creating note: ' + JSON.stringify(result.errors));
+                console.error('Failed to save', await res.json());
             }
-        } catch (err) {
-            console.error(err);
+        } catch (e) {
+            console.error(e);
         }
+    }
+
+    // --- Grid Rendering ---
+
+    function prependNoteToGrid(note) {
+        const html = createNoteCardHTML(note);
+        const div = document.createElement('div');
+        // Grid items don't need a wrapper div if the HTML string is the card itself
+        // But createNoteCardHTML returns string. We need to insert it.
+        // note_card.html outer element is <div class="note-card ...">
+
+        // We use a temp container to convert string to node
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const noteNode = temp.firstElementChild;
+
+        notesGrid.prepend(noteNode);
+        if(emptyState) emptyState.style.display = 'none';
+    }
+
+    function createNoteCardHTML(note) {
+        // Must match note_card.html logic.
+        const colorClassMap = {
+            'white': 'bg-white dark:bg-keep-bg-dark', 'red': 'bg-red-100 dark:bg-red-900', 'orange': 'bg-orange-100 dark:bg-orange-900',
+            'yellow': 'bg-yellow-100 dark:bg-yellow-900', 'green': 'bg-green-100 dark:bg-green-900', 'teal': 'bg-teal-100 dark:bg-teal-900',
+            'blue': 'bg-blue-100 dark:bg-blue-900', 'darkblue': 'bg-indigo-100 dark:bg-indigo-900', 'purple': 'bg-purple-100 dark:bg-purple-900',
+            'pink': 'bg-pink-100 dark:bg-pink-900', 'brown': 'bg-amber-100 dark:bg-amber-900', 'gray': 'bg-gray-100 dark:bg-gray-800'
+        };
+        const bgClass = colorClassMap[note.color] || colorClassMap['white'];
+
+        let contentHtml = '';
+        if (note.is_checklist) {
+            contentHtml += '<ul class="space-y-1">';
+            note.checklist_items.slice(0, 5).forEach(item => {
+                contentHtml += `
+                    <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <span class="material-symbols-outlined text-[18px] text-gray-400">
+                            ${item.is_checked ? 'check_box' : 'check_box_outline_blank'}
+                        </span>
+                        <span class="${item.is_checked ? 'line-through text-gray-500' : ''} break-all">${item.text}</span>
+                    </li>
+                `;
+            });
+            if (note.checklist_items.length > 5) {
+                contentHtml += `<li class="text-xs text-gray-500 pl-7">+ ${note.checklist_items.length - 5} more items</li>`;
+            }
+            contentHtml += '</ul>';
+        } else {
+            const escapedContent = note.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            contentHtml += `<p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden">${escapedContent.substring(0, 300)}</p>`;
+        }
+
+        let labelsHtml = '';
+        if (note.labels && note.labels.length > 0) {
+            labelsHtml = '<div class="flex flex-wrap gap-1 mt-2">';
+            note.labels.forEach(l => {
+                labelsHtml += `<span class="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs text-gray-700 dark:text-gray-300 cursor-pointer" onclick="event.stopPropagation(); window.location.href='/label/${l.name}/'">${l.name}</span>`;
+            });
+            labelsHtml += '</div>';
+        }
+
+        return `
+        <div class="note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}" data-id="${note.id}">
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-10">
+                <button onclick="event.stopPropagation(); togglePinNote(${note.id})" class="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300">
+                    <span class="material-symbols-outlined text-[20px] ${note.is_pinned ? 'fill-1' : ''}">keep</span>
+                </button>
+            </div>
+            <div onclick="openEditModal(${note.id})" class="cursor-pointer flex-1">
+                ${note.title ? `<h3 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6">${note.title}</h3>` : ''}
+                ${contentHtml}
+                ${labelsHtml}
+            </div>
+            <div class="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8">
+                <div class="flex gap-1">
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote(${note.id})">
+                        <span class="material-symbols-outlined text-[18px]">archive</span>
+                    </button>
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote(${note.id})">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    // --- Actions ---
+
+    async function archiveNote(id) {
+        await fetch(`/api/v1/notes/${id}/archive/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+        // Remove from grid
+        document.querySelector(`.note-card[data-id="${id}"]`).remove();
+    }
+
+    async function trashNote(id) {
+        await fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+        document.querySelector(`.note-card[data-id="${id}"]`).remove();
+    }
+
+    async function togglePinNote(id) {
+        const res = await fetch(`/api/v1/notes/${id}/pin/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+        const data = await res.json();
+        // Update UI locally
+        const card = document.querySelector(`.note-card[data-id="${id}"]`);
+        const pinIcon = card.querySelector('.material-symbols-outlined'); // Pin is first one usually, or use selector
+        // My selector in createNoteCardHTML is specific for pin button
+        const pinBtnIcon = card.querySelector('button[onclick*="togglePinNote"] span');
+        if(data.is_pinned) {
+            pinBtnIcon.classList.add('fill-1');
+            card.querySelector('.absolute').classList.add('opacity-100');
+        } else {
+            pinBtnIcon.classList.remove('fill-1');
+            card.querySelector('.absolute').classList.remove('opacity-100');
+        }
+    }
+
+    // --- Live Search ---
+    let searchTimeout;
+    globalSearch.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetchNotes(e.target.value);
+        }, 300);
     });
 
-    // Auto-resize textarea
-    const textarea = document.querySelector('.note-content-input');
-    textarea.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
+    async function fetchNotes(query) {
+        const url = query ? `/api/v1/notes/?search=${query}` : '/api/v1/notes/';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        notesGrid.innerHTML = '';
+        if (data.results) { // DRF paginated response
+            if(data.results.length === 0) {
+                 notesGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No results found</div>';
+            } else {
+                data.results.forEach(note => prependNoteToGrid(note));
+            }
+        } else {
+            // If pagination is off or list
+             data.forEach(note => prependNoteToGrid(note));
+        }
+    }
+
+    // --- Edit Modal (Placeholder for now) ---
+    async function openEditModal(id) {
+        // Fetch full details
+        const res = await fetch(`/api/v1/notes/${id}/`);
+        const note = await res.json();
+
+        const modal = document.getElementById('edit-modal');
+        const content = document.getElementById('edit-modal-content');
+
+        // Populate modal (Reuse logic from Create Form, but populated)
+        // Simplified read-only/edit view
+        content.innerHTML = `
+            <input type="text" id="edit-title" value="${note.title}" class="w-full text-xl font-medium outline-none mb-4 bg-transparent text-gray-900 dark:text-gray-100" placeholder="Title">
+            <textarea id="edit-content" class="w-full h-64 outline-none resize-none bg-transparent text-gray-800 dark:text-gray-200" placeholder="Note">${note.content}</textarea>
+            <div class="flex justify-end mt-4">
+                <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200" onclick="saveEditedNote(${id})">Done</button>
+            </div>
+        `;
+        // Apply color
+        // content.className = ... map color
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeEditModal(e) {
+        if(e.target.id === 'edit-modal') {
+             document.getElementById('edit-modal').classList.add('hidden');
+        }
+    }
+
+    async function saveEditedNote(id) {
+        const title = document.getElementById('edit-title').value;
+        const content = document.getElementById('edit-content').value;
+
+        await fetch(`/api/v1/notes/${id}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify({title, content})
+        });
+
+        document.getElementById('edit-modal').classList.add('hidden');
+        // Refresh grid or update specific card
+        fetchNotes(globalSearch.value);
+    }
 </script>
 {% endblock %}
