@@ -72,6 +72,25 @@ class TrashView(LoginRequiredMixin, ListView):
         context['active_tab'] = 'trash'
         return context
 
+class RemindersView(LoginRequiredMixin, ListView):
+    model = Note
+    template_name = 'index.html'
+    context_object_name = 'notes'
+
+    def get_queryset(self):
+        return Note.objects.filter(
+            user=self.request.user,
+            reminder_date__isnull=False,
+            is_archived=False,
+            is_trashed=False
+        ).order_by('reminder_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Reminders'
+        context['active_tab'] = 'reminders'
+        return context
+
 class LabelNoteView(LoginRequiredMixin, ListView):
     model = Note
     template_name = 'index.html'

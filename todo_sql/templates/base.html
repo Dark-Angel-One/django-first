@@ -89,8 +89,8 @@
                      <span class="material-symbols-outlined {% if active_tab == 'notes' %}fill-1{% endif %}">lightbulb</span>
                      <span class="sidebar-text font-medium">Notes</span>
                  </a>
-                 <a href="#" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark">
-                     <span class="material-symbols-outlined">notifications</span>
+                 <a href="{% url 'reminders' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'reminders' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_tab == 'reminders' %}fill-1{% endif %}">notifications</span>
                      <span class="sidebar-text font-medium">Reminders</span>
                  </a>
                  {% for label in user_labels %}
@@ -204,7 +204,7 @@
             </div>
 
             <div class="flex justify-end mt-4">
-                <button class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="closeLabelModal()">Done</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleLabelModalDone()">Done</button>
             </div>
         </div>
     </div>
@@ -233,6 +233,14 @@
                  document.getElementById('label-modal').classList.add('hidden');
                  if(window.labelsChanged) location.reload();
             }
+        }
+
+        async function handleLabelModalDone() {
+             const input = document.getElementById('new-label-input');
+             if(input.value.trim()) {
+                 await createLabel();
+             }
+             closeLabelModal();
         }
 
         async function createLabel() {

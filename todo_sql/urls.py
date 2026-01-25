@@ -12,6 +12,7 @@ router.register(r'checklist-items', api_views.ChecklistItemViewSet, basename='ch
 urlpatterns = [
     path('', views.NoteListView.as_view(), name='index'),
     path('archive/', views.ArchiveView.as_view(), name='archive'),
+    path('reminders/', views.RemindersView.as_view(), name='reminders'),
     path('trash/', views.TrashView.as_view(), name='trash'),
     path('label/<str:label>/', views.LabelNoteView.as_view(), name='label'),
     path('register/', views.register, name='register'),
