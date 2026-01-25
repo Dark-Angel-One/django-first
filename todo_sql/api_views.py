@@ -27,7 +27,7 @@ class NoteViewSet(viewsets.ModelViewSet):
         note.is_archived = not note.is_archived
         if note.is_archived:
             note.is_trashed = False
-        note.save()
+        note.save(update_fields=['is_archived', 'is_trashed'])
         return Response({'status': 'archived' if note.is_archived else 'unarchived', 'is_archived': note.is_archived})
 
     @action(detail=True, methods=['post'])
@@ -36,14 +36,14 @@ class NoteViewSet(viewsets.ModelViewSet):
         note.is_trashed = not note.is_trashed
         if note.is_trashed:
             note.is_archived = False
-        note.save()
+        note.save(update_fields=['is_trashed', 'is_archived'])
         return Response({'status': 'trashed' if note.is_trashed else 'restored', 'is_trashed': note.is_trashed})
 
     @action(detail=True, methods=['post'])
     def pin(self, request, pk=None):
         note = self.get_object()
         note.is_pinned = not note.is_pinned
-        note.save()
+        note.save(update_fields=['is_pinned'])
         return Response({'status': 'pinned' if note.is_pinned else 'unpinned', 'is_pinned': note.is_pinned})
 
     @action(detail=False, methods=['post']) # Changed to POST for safety, though DELETE is semantic
