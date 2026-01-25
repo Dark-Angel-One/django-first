@@ -1,14 +1,10 @@
 from django import forms
-from .models import Task
+from .models import Note
 
-class TaskForm(forms.ModelForm):
-
-    def clean_title(self):
-        title = self.cleaned_data['title']
-        if len(title) < 3:
-            raise forms.ValidationError("Слишком коротко! Напиши подробнее.")
-        return title
-
+class NoteForm(forms.ModelForm):
     class Meta:
-        model = Task
-        fields = ['title', 'description'] # Какие поля показать пользователю
+        model = Note
+        fields = ['title', 'content', 'color', 'is_pinned']
+        widgets = {
+            'color': forms.HiddenInput(),
+        }

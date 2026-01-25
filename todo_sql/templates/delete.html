@@ -1,29 +1,15 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <title>Удаление</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <div style="background-color: #ffe6e6; padding: 20px; border-radius: 10px; border: 1px solid red; max-width: 500px; margin: 50px auto; text-align: center;">
-
-        <h2 style="color: red;">⚠️ Опасно!</h2>
-
-        <p>Вы действительно хотите удалить задачу:</p>
-        <h3>"{{ task.title }}"?</h3>
-
-        <form method="POST">
-            {% csrf_token %}
-            <!-- Кнопка подтверждения -->
-            <button type="submit" style="background-color: red; color: white; border: none; padding: 10px 20px; cursor: pointer;">
-                Да, удалить навсегда
-            </button>
-        </form>
-
-        <br>
-        <a href="{% url 'index' %}">Нет, я передумала</a>
-
-    </div>
-
-</body>
-</html>
+{% block content %}
+<div style="max-width: 400px; margin: 100px auto; text-align: center; padding: 20px; background: white; border-radius: 8px; border: 1px solid #dadce0;">
+    <h2>Delete Note?</h2>
+    <p>Are you sure you want to delete "{{ object.title|default:'this note' }}"?</p>
+    <form method="POST">
+        {% csrf_token %}
+        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+            <a href="{% url 'index' %}" style="padding: 10px 20px; text-decoration: none; color: #5f6368;">Cancel</a>
+            <button type="submit" style="padding: 10px 20px; background: #f28b82; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,39 +1,32 @@
 from django.db import models
 
+class Note(models.Model):
+    COLOR_CHOICES = [
+        ('white', 'White'),
+        ('red', 'Red'),
+        ('orange', 'Orange'),
+        ('yellow', 'Yellow'),
+        ('green', 'Green'),
+        ('teal', 'Teal'),
+        ('blue', 'Blue'),
+        ('darkblue', 'Dark Blue'),
+        ('purple', 'Purple'),
+        ('pink', 'Pink'),
+        ('brown', 'Brown'),
+        ('gray', 'Gray'),
+    ]
 
-# Создаем Класс (Чертеж) задачи
-class Task(models.Model):
-    # 1. Текстовое поле (для названия задачи)
-    # max_length=200 значит, что задача не может быть длиннее 200 букв
-    title = models.CharField(max_length=200, verbose_name="Название задачи")
-
-    # 2. Булево поле (галочка: сделано или нет)
-    # default=False значит, что новая задача сразу будет "не сделанной"
-    is_completed = models.BooleanField(default=False, verbose_name="Выполнено?")
-
-    # 3. Дата и время создания
-    # auto_now_add=True значит "автоматически поставь текущее время в момент создания"
+    title = models.CharField(max_length=200, blank=True, verbose_name="Заголовок")
+    content = models.TextField(verbose_name="Текст заметки")
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='white', verbose_name="Цвет")
+    is_pinned = models.BooleanField(default=False, verbose_name="Закреплено")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
-    description = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
-    # Это магический метод.
-    # Он говорит Django: "Когда будешь показывать эту задачу в админке, пиши её название, а не 'Task object (1)'"
     def __str__(self):
-        return self.title
+        return self.title if self.title else self.content[:20]
 
-    def save(self, *args, **kwargs):
-        # Если в конце нет восклицательного знака...
-        if not self.title.endswith('!'):
-            # ...добавляем его
-            self.title = self.title + "!"
-
-        # Выполняем настоящее сохранение
-        super().save(*args, **kwargs)
-
-    class Meta: #класс внутри класса, — это "наклейка на коробке", где написано,
-        # как с этой посылкой обращаться. Здесь мы пишем настройки для самой модели.
-        verbose_name = 'Задача'
-        verbose_name_plural = 'Задачи'
-        ordering = ['-created_at']
-
-
+    class Meta:
+        verbose_name = 'Заметка'
+        verbose_name_plural = 'Заметки'
+        ordering = ['-is_pinned', '-updated_at']
