@@ -108,7 +108,10 @@
                         </div>
                      </div>
                 </div>
-                <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="closeCreateNote()">Close</button>
+                <div class="flex gap-2">
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleDiscardNote()">Discard</button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleSaveNote()">Save</button>
+                </div>
             </div>
         </form>
     </div>
@@ -195,6 +198,12 @@
     const emptyState = document.getElementById('empty-state');
     const globalSearch = document.getElementById('global-search');
 
+    const userLabels = [
+        {% for label in user_labels %}
+        {id: {{ label.id }}, name: "{{ label.name|escapejs }}"},
+        {% endfor %}
+    ];
+
     // --- Create Note Logic ---
     function showCreateNote(isChecklist = false) {
         createNoteCollapsed.classList.add('hidden');
@@ -220,7 +229,7 @@
         }
     }
 
-    function closeCreateNote() {
+    function handleSaveNote() {
         // Collect data
         const title = createNoteForm.querySelector('[name="title"]').value.trim();
         const content = createNoteForm.querySelector('[name="content"]').value.trim();
@@ -255,7 +264,14 @@
             });
         }
 
-        // Reset UI
+        resetCreateForm();
+    }
+
+    function handleDiscardNote() {
+        resetCreateForm();
+    }
+
+    function resetCreateForm() {
         createNoteForm.reset();
         // Uncheck labels
         createNoteForm.querySelectorAll('input[name="label_ids"]').forEach(cb => cb.checked = false);
@@ -548,31 +564,82 @@
         }
     }
 
-    // --- Edit Modal (Placeholder for now) ---
+    // --- Edit Modal ---
     async function openEditModal(id) {
-        // Fetch full details
         const res = await fetch(`/api/v1/notes/${id}/`);
         const note = await res.json();
-
         const modal = document.getElementById('edit-modal');
         const content = document.getElementById('edit-modal-content');
 
-        // Populate modal (Reuse logic from Create Form, but populated)
-        // Simplified read-only/edit view
+        let labelsHtml = '';
+        userLabels.forEach(label => {
+            const isChecked = note.labels.some(l => l.id === label.id) ? 'checked' : '';
+            labelsHtml += `
+            <label class="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                <input type="checkbox" name="edit_label_ids" value="${label.id}" ${isChecked} class="form-checkbox text-yellow-500 rounded focus:ring-0">
+                <span class="text-sm text-gray-800 dark:text-gray-200 truncate">${label.name}</span>
+            </label>`;
+        });
+
+        const reminderVal = note.reminder_date ? note.reminder_date.slice(0, 16) : '';
+
         content.innerHTML = `
-            <input type="text" id="edit-title" class="w-full text-xl font-medium outline-none mb-4 bg-transparent text-gray-900 dark:text-gray-100" placeholder="Title">
-            <textarea id="edit-content" class="w-full h-64 outline-none resize-none bg-transparent text-gray-800 dark:text-gray-200" placeholder="Note"></textarea>
-            <div class="flex justify-end mt-4">
+            <div class="flex justify-between items-start mb-2">
+                <input type="text" id="edit-title" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Title" value="${note.title}">
+                <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="toggleEditPin(this)">
+                    <span class="material-symbols-outlined icon-pin ${note.is_pinned ? 'fill-1' : ''}">keep</span>
+                </button>
+                <input type="hidden" id="edit-is-pinned" value="${note.is_pinned}">
+            </div>
+
+            <textarea id="edit-content" class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[100px]" placeholder="Note">${note.content}</textarea>
+
+            <div class="flex justify-between items-center mt-4">
+                <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
+                    <!-- Color -->
+                    <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="material-symbols-outlined text-[18px]">palette</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden group-hover:flex border dark:border-gray-700 z-10 flex-wrap w-48">
+                             ${['white','red','orange','yellow','green','teal','blue','darkblue','purple','pink','brown','gray'].map(c =>
+                                `<div class="w-6 h-6 rounded-full border cursor-pointer ${getColorClass(c)}" onclick="setEditColor('${c}')"></div>`
+                             ).join('')}
+                        </div>
+                    </div>
+                    <input type="hidden" id="edit-color" value="${note.color}">
+
+                    <!-- Labels -->
+                    <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="material-symbols-outlined text-[18px]">label</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-48 max-h-48 overflow-y-auto">
+                            ${labelsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Archive -->
+                    <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${note.is_archived ? 'text-gray-900 bg-gray-200 dark:bg-gray-600' : ''}" onclick="toggleEditArchive(this)">
+                        <span class="material-symbols-outlined text-[18px]">archive</span>
+                    </button>
+                    <input type="hidden" id="edit-is-archived" value="${note.is_archived}">
+
+                    <!-- Reminder -->
+                    <div class="relative group">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="material-symbols-outlined text-[18px]">notifications</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden group-hover:block border dark:border-gray-700 z-10 w-64">
+                             <input type="datetime-local" id="edit-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none" value="${reminderVal}">
+                        </div>
+                    </div>
+                </div>
                 <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200" onclick="saveEditedNote(${id})">Done</button>
             </div>
         `;
 
-        document.getElementById('edit-title').value = note.title;
-        document.getElementById('edit-content').value = note.content;
-
-        // Apply color
-        // content.className = ... map color
-
+        setEditColor(note.color);
         modal.classList.remove('hidden');
     }
 
@@ -585,16 +652,67 @@
     async function saveEditedNote(id) {
         const title = document.getElementById('edit-title').value;
         const content = document.getElementById('edit-content').value;
+        const isPinned = document.getElementById('edit-is-pinned').value === 'true';
+        const isArchived = document.getElementById('edit-is-archived').value === 'true';
+        const color = document.getElementById('edit-color').value;
+        const reminderDate = document.getElementById('edit-reminder-date').value;
+
+        const labelCheckboxes = document.querySelectorAll('input[name="edit_label_ids"]:checked');
+        const labelIds = Array.from(labelCheckboxes).map(cb => parseInt(cb.value));
 
         await fetch(`/api/v1/notes/${id}/`, {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-            body: JSON.stringify({title, content})
+            body: JSON.stringify({
+                title, content, is_pinned: isPinned, is_archived: isArchived,
+                color, reminder_date: reminderDate || null, label_ids: labelIds
+            })
         });
 
         document.getElementById('edit-modal').classList.add('hidden');
-        // Refresh grid or update specific card
         fetchNotes(globalSearch.value);
+    }
+
+    function toggleEditPin(btn) {
+        const input = document.getElementById('edit-is-pinned');
+        const icon = btn.querySelector('.material-symbols-outlined');
+        input.value = input.value === 'true' ? 'false' : 'true';
+        icon.classList.toggle('fill-1');
+    }
+
+    function toggleEditArchive(btn) {
+        const input = document.getElementById('edit-is-archived');
+        input.value = input.value === 'true' ? 'false' : 'true';
+        btn.classList.toggle('text-gray-900');
+        btn.classList.toggle('bg-gray-200');
+    }
+
+    function setEditColor(color) {
+        document.getElementById('edit-color').value = color;
+        const form = document.getElementById('edit-modal-content');
+
+        const tailwindClassMap = {
+            'white': 'bg-white', 'red': 'bg-red-100', 'orange': 'bg-orange-100', 'yellow': 'bg-yellow-100',
+            'green': 'bg-green-100', 'teal': 'bg-teal-100', 'blue': 'bg-blue-100', 'darkblue': 'bg-indigo-100',
+            'purple': 'bg-purple-100', 'pink': 'bg-pink-100', 'brown': 'bg-amber-100', 'gray': 'bg-gray-100'
+        };
+        const tailwindDarkClassMap = {
+            'white': 'dark:bg-keep-bg-dark', 'red': 'dark:bg-red-900', 'orange': 'dark:bg-orange-900',
+            'yellow': 'dark:bg-yellow-900', 'green': 'dark:bg-green-900', 'teal': 'dark:bg-teal-900',
+            'blue': 'dark:bg-blue-900', 'darkblue': 'dark:bg-indigo-900', 'purple': 'dark:bg-purple-900',
+            'pink': 'dark:bg-pink-900', 'brown': 'dark:bg-amber-900', 'gray': 'dark:bg-gray-800'
+        };
+
+        form.classList.remove('bg-white', 'dark:bg-keep-bg-dark');
+        const allColors = Object.values(tailwindClassMap).concat(Object.values(tailwindDarkClassMap));
+        form.classList.remove(...allColors);
+
+        form.classList.add(tailwindClassMap[color], tailwindDarkClassMap[color]);
+    }
+
+    function getColorClass(c) {
+        const map = {'white': 'bg-white', 'red': 'bg-red-200', 'orange': 'bg-orange-200', 'yellow': 'bg-yellow-200', 'green': 'bg-green-200', 'teal': 'bg-teal-200', 'blue': 'bg-blue-200', 'darkblue': 'bg-indigo-200', 'purple': 'bg-purple-200', 'pink': 'bg-pink-200', 'brown': 'bg-amber-200', 'gray': 'bg-gray-200'};
+        return map[c];
     }
 </script>
 {% endblock %}
