@@ -1,61 +1,189 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Список задач</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <h1>Мои задачи</h1>
+{% block search %}
+<form method="GET" action="{% url 'index' %}" class="search-bar">
+    <button type="submit" style="border:none; background:none; cursor:pointer;">
+        <svg focusable="false" height="24px" viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"><path d="M20.49,19l-5.73-5.73C15.53,12.2,16,10.91,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5C3,13.09,5.91,16,9.5,16 c1.41,0,2.7-0.47,3.77-1.24L19,20.51L20.49,19z M5,9.5C5,7.01,7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14S5,11.99,5,9.5z"></path></svg>
+    </button>
+    <input type="text" name="q" placeholder="Search" value="{{ request.GET.q|default:'' }}">
+</form>
+{% endblock %}
 
- <!-- Вместо формы теперь КНОПКА -->
-    <div style="margin-bottom: 20px;">
-        <a href="{% url 'add' %}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 18px;">
-            + Добавить задачу
-        </a>
+{% block content %}
+<div class="create-note-container">
+    <div id="create-note-placeholder" class="create-note-placeholder">
+        Take a note...
     </div>
+    <form id="create-note-form" class="create-note-form">
+        {% csrf_token %}
+        <input type="text" name="title" class="note-input note-title-input" placeholder="Title">
+        <textarea name="content" class="note-input note-content-input" placeholder="Take a note..." rows="1"></textarea>
 
-    <hr>
+        <!-- Hidden inputs for color and pinned -->
+        <input type="hidden" name="color" id="id_color" value="white">
+        <input type="checkbox" name="is_pinned" id="id_is_pinned" style="display:none;">
 
-    <!-- СПИСОК ЗАДАЧ -->
-    <h3>Список:</h3>
-    <ul>
-        {% for task in tasks %}
-            <li>
-                <a href="{% url 'delete' task.id %}" style="color: red; text-decoration: none; margin-left: 10px;">
-                    ❌
-                </a>
-                <!-- 2. НОВОЕ: КАРАНДАШИК (Ссылка на edit) -->
-                <!-- margin-left: 10px делает отступ от названия -->
-                <a href="{% url 'edit' task.id %}" style="text-decoration: none; margin-left: 10px;">
-                    ✏️
-                </a>
-                <a href="{% url 'toggle' task.id %}" style="text-decoration: none; color: black; cursor: pointer;">
+        <div class="color-options">
+            {% for code, name in form.fields.color.choices %}
+                <div class="color-circle {% if code == 'white' %}selected{% endif %}"
+                     data-color="{{ code }}"
+                     style="background-color: {% if code == 'white' %}#fff{% elif code == 'red' %}#f28b82{% elif code == 'orange' %}#fbbc04{% elif code == 'yellow' %}#fff475{% elif code == 'green' %}#ccff90{% elif code == 'teal' %}#a7ffeb{% elif code == 'blue' %}#cbf0f8{% elif code == 'darkblue' %}#aecbfa{% elif code == 'purple' %}#d7aefb{% elif code == 'pink' %}#fdcfe8{% elif code == 'brown' %}#e6c9a8{% elif code == 'gray' %}#e8eaed{% endif %};"
+                     title="{{ name }}"></div>
+            {% endfor %}
+        </div>
 
-                <!-- Заголовок и статус -->
-                {% if task.is_completed %}
-                    [V] {{ task.title }}
-                {% else %}
-                    [ ] {{ task.title }}
-                {% endif %}
-                    </a>
-                <!-- 2. ССЫЛКА-УДАЛЕНИЕ (Обернули крестик в ссылку) -->
-                <!-- Важно: </a> ставим ПОСЛЕ крестика -->
-                <a href="{% url 'delete' task.id %}" style="color: red; text-decoration: none; margin-left: 10px;">
-                    ❌
-                </a>
+        <div class="form-actions">
+            <button type="button" id="close-note-form" class="btn-close">Close</button>
+            <button type="submit" class="btn-save">Save</button>
+        </div>
+    </form>
+</div>
 
-                <!-- Дата создания -->
-                <small>({{ task.created_at|date:"d.m.Y H:i" }})</small> <!--created_at приходят в начало -->
+<div class="notes-grid" id="notes-grid">
+    {% for note in notes %}
+        <div class="note-card note-{{ note.color }} {% if note.is_pinned %}pinned{% endif %}">
+            {% if note.is_pinned %}
+                <div class="pin-icon">📌</div>
+            {% endif %}
 
-                <!-- Описание, если оно заполнено -->
-                {% if task.description %}
-                    <p>-- {{ task.description }}</p>
-                {% endif %}
-            </li>
-        {% empty %}
-            <li>Список пуст.</li>
-        {% endfor %}
-    </ul>
+            {% if note.title %}
+                <h3>{{ note.title }}</h3>
+            {% endif %}
+            <p>{{ note.content|linebreaksbr }}</p>
 
-</body>
-</html>
+            <div class="note-actions">
+                <a href="{% url 'edit' note.id %}" class="icon-btn" title="Edit">✏️</a>
+                <a href="{% url 'delete' note.id %}" class="icon-btn" title="Delete">🗑️</a>
+            </div>
+        </div>
+    {% empty %}
+        <p style="text-align: center; color: #5f6368; grid-column: 1/-1;">No notes yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const placeholder = document.getElementById('create-note-placeholder');
+    const form = document.getElementById('create-note-form');
+    const closeBtn = document.getElementById('close-note-form');
+    const colorCircles = document.querySelectorAll('.color-circle');
+    const colorInput = document.getElementById('id_color');
+    const grid = document.getElementById('notes-grid');
+
+    // Toggle Form
+    placeholder.addEventListener('click', () => {
+        placeholder.style.display = 'none';
+        form.style.display = 'block';
+        document.querySelector('.note-content-input').focus();
+    });
+
+    closeBtn.addEventListener('click', () => {
+        placeholder.style.display = 'block';
+        form.style.display = 'none';
+    });
+
+    // Color Selection
+    colorCircles.forEach(circle => {
+        circle.addEventListener('click', () => {
+            colorCircles.forEach(c => c.classList.remove('selected'));
+            circle.classList.add('selected');
+            colorInput.value = circle.dataset.color;
+            form.style.backgroundColor = getComputedStyle(circle).backgroundColor;
+        });
+    });
+
+    // AJAX Submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Simple manual object construction
+        const payload = {
+            title: form.querySelector('[name="title"]').value,
+            content: form.querySelector('[name="content"]').value,
+            color: colorInput.value,
+            is_pinned: false // Default
+        };
+
+        try {
+            const response = await fetch("{% url 'create_note_ajax' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const n = result.note;
+                const card = document.createElement('div');
+                card.className = `note-card note-${n.color} ${n.is_pinned ? 'pinned' : ''}`;
+
+                let html = '';
+                if (n.is_pinned) {
+                    html += '<div class="pin-icon">📌</div>';
+                }
+                if (n.title) {
+                    html += `<h3>${n.title}</h3>`;
+                }
+
+                // Simple XSS protection for content: we trust the user input generally in this scope,
+                // but textContent is safer. However, we want <br> for newlines.
+                // Let's escape HTML entities then replace newlines.
+                const escapeHtml = (text) => {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                };
+
+                const contentHtml = escapeHtml(n.content).replace(/\n/g, '<br>');
+                html += `<p>${contentHtml}</p>`;
+
+                // Hardcoded URL patterns based on urls.py structure
+                html += `
+                    <div class="note-actions">
+                        <a href="/edit/${n.id}/" class="icon-btn" title="Edit">✏️</a>
+                        <a href="/delete/${n.id}/" class="icon-btn" title="Delete">🗑️</a>
+                    </div>
+                `;
+
+                card.innerHTML = html;
+
+                // Prepend to grid
+                grid.prepend(card);
+
+                // Clear and close form
+                form.reset();
+                colorInput.value = 'white';
+                form.style.backgroundColor = '#fff';
+                colorCircles.forEach(c => c.classList.remove('selected'));
+                // Select white again
+                const whiteCircle = document.querySelector('.color-circle[data-color="white"]');
+                if (whiteCircle) whiteCircle.classList.add('selected');
+
+                placeholder.style.display = 'block';
+                form.style.display = 'none';
+
+                // Remove "No notes yet" message if present
+                const emptyMsg = Array.from(grid.children).find(c => c.tagName === 'P' && c.textContent.includes('No notes yet'));
+                if (emptyMsg) emptyMsg.remove();
+
+            } else {
+                alert('Error creating note: ' + JSON.stringify(result.errors));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // Auto-resize textarea
+    const textarea = document.querySelector('.note-content-input');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+</script>
+{% endblock %}

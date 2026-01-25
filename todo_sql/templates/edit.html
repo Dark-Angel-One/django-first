@@ -1,29 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Редактирование</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <h1>Редактирование задачи ✏️</h1>
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; padding: 20px;">
+    <h2>Edit Note</h2>
+    <form method="POST" class="create-note-form" style="display: block;">
+        {% csrf_token %}
+        <input type="text" name="title" class="note-input note-title-input" value="{{ form.title.value|default:'' }}" placeholder="Title">
+        <textarea name="content" class="note-input note-content-input" rows="5" placeholder="Note">{{ form.content.value }}</textarea>
 
-    <!-- Выводим старое название, чтобы знать, что правим -->
-    <h3>Вы меняете: "{{ task.title }}"</h3>
+        <label>
+            {{ form.is_pinned }} Pin this note
+        </label>
 
-    <div style="background-color: #fff3cd; padding: 20px; border-radius: 10px;">
-        <form method="POST">
-            {% csrf_token %}
+        <input type="hidden" name="color" id="id_color" value="{{ form.color.value }}">
 
-            <!-- Django сам подставит старый текст в поля! -->
-            {{ form.as_p }}
+        <div class="color-options" style="margin-bottom: 20px;">
+            {% for code, name in form.fields.color.choices %}
+                <div class="color-circle {% if code == form.color.value %}selected{% endif %}"
+                     data-color="{{ code }}"
+                     style="background-color: {% if code == 'white' %}#fff{% elif code == 'red' %}#f28b82{% elif code == 'orange' %}#fbbc04{% elif code == 'yellow' %}#fff475{% elif code == 'green' %}#ccff90{% elif code == 'teal' %}#a7ffeb{% elif code == 'blue' %}#cbf0f8{% elif code == 'darkblue' %}#aecbfa{% elif code == 'purple' %}#d7aefb{% elif code == 'pink' %}#fdcfe8{% elif code == 'brown' %}#e6c9a8{% elif code == 'gray' %}#e8eaed{% endif %};"
+                     title="{{ name }}"></div>
+            {% endfor %}
+        </div>
 
-            <button type="submit">Сохранить изменения</button>
-        </form>
-    </div>
+        <div class="form-actions">
+            <a href="{% url 'index' %}" class="btn-close" style="text-decoration:none;">Cancel</a>
+            <button type="submit" class="btn-save" style="background: #f1f3f4;">Save</button>
+        </div>
+    </form>
+</div>
 
-    <br>
-    <!-- Кнопка отмены -->
-    <a href="{% url 'index' %}"> <-- Вернуться назад (Отмена)</a>
+<script>
+    const colorCircles = document.querySelectorAll('.color-circle');
+    const colorInput = document.getElementById('id_color');
+    const form = document.querySelector('form');
 
-</body>
-</html>
+    // Set initial background color
+    const initialColor = "{{ form.color.value }}";
+
+    colorCircles.forEach(circle => {
+        circle.addEventListener('click', () => {
+            colorCircles.forEach(c => c.classList.remove('selected'));
+            circle.classList.add('selected');
+            colorInput.value = circle.dataset.color;
+            form.style.backgroundColor = getComputedStyle(circle).backgroundColor;
+        });
+
+        // Initialize bg
+        if (circle.dataset.color === initialColor) {
+             form.style.backgroundColor = getComputedStyle(circle).backgroundColor;
+        }
+    });
+</script>
+{% endblock %}
