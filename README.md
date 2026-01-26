@@ -5,13 +5,15 @@ A professional, "Pixel-perfect" clone of Google Keep, built with Django 6 and Ta
 ## 🚀 Features
 
 ### Core Functionality
-- **Smart Note Creation**: Create standard text notes or checklists with checkboxes.
+- **Checklists & Todo Mode**: Create dynamic checklists with checkboxes, progress tracking, and strikethrough completion.
+- **Smart Reminders (Audio + Auto-Archive)**: Set reminders that play a sound when due and automatically move the note to the Archive.
 - **Organization**: Pin important notes, Archive old ones, and Move to Trash (Soft Delete).
 - **Color Coding**: Organize notes visually with a palette of 12 colors (Dark Mode compatible).
 - **Live Search**: Real-time filtering of notes by title and content.
 
 ### UI/UX (2025 Standards)
 - **Glassmorphism & Bento Layout**: Modern, grid-based layout using Tailwind CSS.
+- **Optimistic UI**: Instant feedback for actions like Pinning and Checkbox toggling, ensuring the interface feels snappy even on slow networks.
 - **Dark/Light Mode**: Fully supported with persistent preference (localStorage).
 - **Responsive Design**: Collapsible sidebar and mobile-friendly interface.
 - **Micro-interactions**: Hover effects, smooth transitions, and dynamic modals.
