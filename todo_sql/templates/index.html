@@ -352,20 +352,52 @@
         createNoteForm.classList.add(tailwindClassMap[color], tailwindDarkClassMap[color]);
     }
 
-    function addChecklistItemInput(value = '', isChecked = false) {
+    function addChecklistItemInput(value = '', isChecked = false, insertAfterNode = null) {
         const container = document.getElementById('checklist-items-form');
         const div = document.createElement('div');
-        div.className = 'flex items-center gap-2';
+        div.className = 'flex items-center gap-2 group/item';
         div.innerHTML = `
-            <span class="material-symbols-outlined text-gray-400 cursor-pointer" onclick="this.textContent = this.textContent === 'check_box' ? 'check_box_outline_blank' : 'check_box'; this.nextElementSibling.dataset.checked = this.textContent === 'check_box';">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none" onclick="this.textContent = this.textContent === 'check_box' ? 'check_box_outline_blank' : 'check_box'; this.nextElementSibling.dataset.checked = this.textContent === 'check_box';">
                 ${isChecked ? 'check_box' : 'check_box_outline_blank'}
             </span>
-            <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300" placeholder="List item" value="${value}" data-checked="${isChecked}" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addChecklistItemInput(); this.parentElement.nextElementSibling.querySelector('input').focus(); }">
-            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600" onclick="this.parentElement.remove()">close</span>
+            <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
+                placeholder="List item"
+                value="${value}"
+                data-checked="${isChecked}"
+                onkeydown="handleChecklistKeydown(event, this)">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity" onclick="this.parentElement.remove()">close</span>
         `;
-        container.appendChild(div);
+
+        if (insertAfterNode && insertAfterNode.parentNode === container) {
+            if (insertAfterNode.nextSibling) {
+                container.insertBefore(div, insertAfterNode.nextSibling);
+            } else {
+                container.appendChild(div);
+            }
+        } else {
+            container.appendChild(div);
+        }
+
         // Focus the new input
-        if (!value) div.querySelector('input').focus();
+        div.querySelector('input').focus();
+    }
+
+    function handleChecklistKeydown(event, input) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            addChecklistItemInput('', false, input.parentElement);
+        } else if (event.key === 'Backspace' && input.value === '' && document.getElementById('checklist-items-form').children.length > 1) {
+            event.preventDefault();
+            const prev = input.parentElement.previousElementSibling;
+            input.parentElement.remove();
+            if (prev) {
+                const prevInput = prev.querySelector('input');
+                prevInput.focus();
+                // Move cursor to end
+                const len = prevInput.value.length;
+                prevInput.setSelectionRange(len, len);
+            }
+        }
     }
 
     // --- API Calls ---
@@ -425,7 +457,7 @@
             note.checklist_items.slice(0, 5).forEach(item => {
                 contentHtml += `
                     <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
-                        <span class="material-symbols-outlined text-[18px] text-gray-400">
+                        <span class="material-symbols-outlined text-[18px] text-gray-400 cursor-pointer" onclick="event.stopPropagation(); toggleCheckbox(${item.id}, this)">
                             ${item.is_checked ? 'check_box' : 'check_box_outline_blank'}
                         </span>
                         <span class="${item.is_checked ? 'line-through text-gray-500' : ''} break-all">${item.text}</span>
@@ -451,7 +483,7 @@
         }
 
         return `
-        <div class="note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}" data-id="${note.id}">
+        <div class="note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}" data-id="${note.id}" data-pinned="${note.is_pinned}" data-reminder="${note.reminder_date || ''}">
             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-20">
                 <button onclick="event.stopPropagation(); togglePinNote(${note.id})" class="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300">
                     <span class="material-symbols-outlined text-[20px] ${note.is_pinned ? 'fill-1' : ''}">keep</span>
@@ -501,6 +533,7 @@
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
         const pinBtnIcon = card.querySelector('button span.material-symbols-outlined');
         const pinContainer = card.querySelector('.absolute.top-2.right-2');
+        const notesGrid = document.getElementById('notes-grid');
         
         // Оптимистичное обновление UI (сразу меняем цвет, не дожидаясь ответа сервера)
         const isCurrentlyPinned = pinBtnIcon.classList.contains('fill-1');
@@ -521,13 +554,35 @@
             });
             const data = await res.json();
             
-            // Если сервер вернул состояние, отличное от нашего, синхронизируем (на всякий случай)
-            if (data.is_pinned !== undefined && data.is_pinned !== !isCurrentlyPinned) {
-                pinBtnIcon.classList.toggle('fill-1', data.is_pinned);
-                pinContainer.classList.toggle('opacity-100', data.is_pinned);
+            // Синхронизация UI
+            const isPinned = data.is_pinned;
+
+            if (isPinned !== undefined) {
+                pinBtnIcon.classList.toggle('fill-1', isPinned);
+                pinContainer.classList.toggle('opacity-100', isPinned);
+                card.dataset.pinned = isPinned ? 'true' : 'false';
+
+                // Сортировка (DOM Manipulation)
+                if (isPinned) {
+                    // Переместить в начало
+                    notesGrid.prepend(card);
+                } else {
+                    // Переместить после последней закрепленной заметки
+                    const pinnedNotes = Array.from(notesGrid.querySelectorAll('.note-card[data-pinned="true"]'));
+                    const otherPinned = pinnedNotes.filter(n => n !== card);
+
+                    if (otherPinned.length > 0) {
+                        const lastPinned = otherPinned[otherPinned.length - 1];
+                        lastPinned.after(card);
+                    } else {
+                        // Если нет других закрепленных, ставим в начало (так как она была только что изменена/создана)
+                        notesGrid.prepend(card);
+                    }
+                }
             }
         } catch (e) {
             console.error("Ошибка при закреплении заметки:", e);
+            // Revert optimistic update on error? (Optional, skipping for now)
         }
     }
 
@@ -725,6 +780,77 @@
     function getColorClass(c) {
         const map = {'white': 'bg-white', 'red': 'bg-red-200', 'orange': 'bg-orange-200', 'yellow': 'bg-yellow-200', 'green': 'bg-green-200', 'teal': 'bg-teal-200', 'blue': 'bg-blue-200', 'darkblue': 'bg-indigo-200', 'purple': 'bg-purple-200', 'pink': 'bg-pink-200', 'brown': 'bg-amber-200', 'gray': 'bg-gray-200'};
         return map[c];
+    }
+
+    // --- Active Reminders ---
+    // Simple beep sound
+    const notificationSound = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
+
+    function checkReminders() {
+        const now = new Date();
+        document.querySelectorAll('.note-card[data-reminder]').forEach(card => {
+            const reminderStr = card.dataset.reminder;
+            if (!reminderStr) return;
+
+            const reminderDate = new Date(reminderStr);
+            // Check if valid date and past/now (and not checked recently? - no, we archive it, so it's fine)
+            if (!isNaN(reminderDate.getTime()) && reminderDate <= now) {
+                triggerReminder(card);
+            }
+        });
+    }
+
+    async function triggerReminder(card) {
+        // Prevent double firing if interval overlaps with async operations (though card removal handles this)
+        if (card.dataset.processing) return;
+        card.dataset.processing = "true";
+
+        const id = card.dataset.id;
+        const titleElement = card.querySelector('h3');
+        const title = titleElement ? titleElement.innerText : 'Note';
+
+        // 1. Play Sound
+        try {
+            await notificationSound.play();
+        } catch(e) { console.log("Audio play blocked (user interaction required)", e); }
+
+        // 2. Notification
+        const msg = `Reminder: "${title}" moved to archive`;
+        if (Notification.permission === "granted") {
+            new Notification("Todo App", { body: msg });
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification("Todo App", { body: msg });
+                }
+            });
+        }
+
+        // 3. Toast
+        showToast(msg);
+
+        // 4. Archive (removes from grid)
+        await archiveNote(id);
+    }
+
+    function showToast(message) {
+        const div = document.createElement('div');
+        div.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl z-50 transition-opacity duration-500 flex items-center gap-2';
+        div.innerHTML = `<span class="material-symbols-outlined">notifications_active</span><span>${message}</span>`;
+        document.body.appendChild(div);
+        setTimeout(() => {
+            div.style.opacity = '0';
+            setTimeout(() => div.remove(), 500);
+        }, 4000);
+    }
+
+    // Check every 30 seconds
+    setInterval(checkReminders, 30000);
+    // Initial request for permission
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        document.addEventListener('click', () => {
+            Notification.requestPermission();
+        }, { once: true });
     }
 </script>
 {% endblock %}
