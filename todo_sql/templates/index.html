@@ -459,24 +459,41 @@
 
         let contentHtml = '';
         if (note.is_checklist) {
-            contentHtml += '<ul class="space-y-1">';
+            // Build checklist safely
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-1';
+
             note.checklist_items.slice(0, 5).forEach(item => {
-                contentHtml += `
-                    <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
-                        <span class="material-symbols-outlined text-[18px] text-gray-400 cursor-pointer" onclick="event.stopPropagation(); toggleCheckbox(${item.id}, this)">
-                            ${item.is_checked ? 'check_box' : 'check_box_outline_blank'}
-                        </span>
-                        <span class="${item.is_checked ? 'line-through text-gray-500' : ''} break-all">${item.text}</span>
-                    </li>
-                `;
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200';
+
+                const spanIcon = document.createElement('span');
+                spanIcon.className = 'material-symbols-outlined text-[18px] text-gray-400 cursor-pointer';
+                spanIcon.onclick = function(e) { e.stopPropagation(); toggleCheckbox(item.id, this); };
+                spanIcon.textContent = item.is_checked ? 'check_box' : 'check_box_outline_blank';
+
+                const spanText = document.createElement('span');
+                spanText.className = item.is_checked ? 'line-through text-gray-500 break-all' : 'break-all';
+                spanText.textContent = item.text;
+
+                li.appendChild(spanIcon);
+                li.appendChild(spanText);
+                ul.appendChild(li);
             });
+
             if (note.checklist_items.length > 5) {
-                contentHtml += `<li class="text-xs text-gray-500 pl-7">+ ${note.checklist_items.length - 5} more items</li>`;
+                const liMore = document.createElement('li');
+                liMore.className = 'text-xs text-gray-500 pl-7';
+                liMore.textContent = `+ ${note.checklist_items.length - 5} more items`;
+                ul.appendChild(liMore);
             }
-            contentHtml += '</ul>';
+            contentHtml = ul.outerHTML;
         } else {
-            const escapedContent = note.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            contentHtml += `<p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden">${escapedContent.substring(0, 300)}</p>`;
+            // Build text content safely
+            const p = document.createElement('p');
+            p.className = 'text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden';
+            p.textContent = note.content.substring(0, 300);
+            contentHtml = p.outerHTML;
         }
 
         let labelsHtml = '';

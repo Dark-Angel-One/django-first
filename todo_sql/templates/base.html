@@ -75,6 +75,7 @@
     </style>
 </head>
 <body class="bg-keep-bg dark:bg-keep-bg-dark text-gray-800 dark:text-gray-200 min-h-screen flex overflow-hidden transition-colors duration-200">
+    <div style="display:none;">{% csrf_token %}</div>
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex">
@@ -216,6 +217,10 @@
     <!-- Scripts -->
     <script>
         function getCookie(name) {
+            // Try to get from hidden input first (HttpOnly cookie safety)
+            const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (tokenInput) return tokenInput.value;
+
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');

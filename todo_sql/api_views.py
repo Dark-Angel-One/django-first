@@ -54,16 +54,23 @@ class NoteViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def trash(self, request, pk=None):
-        # Используем оптимизированный метод с переключением состояния (Toggle)
-        updated = Note.objects.filter(pk=pk, user=request.user).update(
-            is_trashed=Case(When(is_trashed=True, then=Value(False)), default=Value(True)),
-            is_archived=Case(When(is_trashed=False, then=Value(False)), default=F('is_archived')),
-            updated_at=timezone.now()
-        )
-        if updated == 0:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        try:
+            note = Note.objects.get(pk=pk, user=request.user)
+        except Note.DoesNotExist:
+             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        note = Note.objects.get(pk=pk)
+        if note.is_trashed:
+            # Restore
+            note.is_trashed = False
+            note.is_archived = False
+        else:
+            # Trash
+            note.is_trashed = True
+            note.is_archived = False
+            note.is_pinned = False
+
+        note.updated_at = timezone.now()
+        note.save()
         return Response({'is_trashed': note.is_trashed, 'is_archived': note.is_archived})
 
     @action(detail=True, methods=['post'])
