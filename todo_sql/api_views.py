@@ -22,7 +22,7 @@ class NoteViewSet(viewsets.ModelViewSet):
     filterset_fields = ['is_pinned', 'is_archived', 'is_trashed', 'color', 'is_checklist', 'labels']
     search_fields = ['title', 'content', 'checklist_items__text']
     ordering_fields = ['updated_at', 'created_at']
-    ordering = ['-is_pinned', '-updated_at']
+    ordering = ['-is_pinned', 'order', '-updated_at']
 
     def get_queryset(self):
         queryset = Note.objects.filter(user=self.request.user).prefetch_related('labels', 'checklist_items')
@@ -89,6 +89,36 @@ class NoteViewSet(viewsets.ModelViewSet):
     def empty_trash(self, request):
         count, _ = Note.objects.filter(user=request.user, is_trashed=True).delete()
         return Response({'status': 'trash emptied', 'deleted_count': count})
+
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        pinned_ids = request.data.get('pinned_ids', [])
+        other_ids = request.data.get('other_ids', [])
+
+        all_ids = pinned_ids + other_ids
+        if not all_ids:
+            return Response({'status': 'ok'})
+
+        notes = list(Note.objects.filter(id__in=all_ids, user=request.user))
+
+        pinned_map = {int(pid): i for i, pid in enumerate(pinned_ids)}
+        other_map = {int(pid): i for i, pid in enumerate(other_ids)}
+
+        updates = []
+        for note in notes:
+            if note.id in pinned_map:
+                note.is_pinned = True
+                note.order = pinned_map[note.id]
+                updates.append(note)
+            elif note.id in other_map:
+                note.is_pinned = False
+                note.order = other_map[note.id]
+                updates.append(note)
+
+        if updates:
+            Note.objects.bulk_update(updates, ['is_pinned', 'order'])
+
+        return Response({'status': 'reordered'})
 
 class LabelViewSet(viewsets.ModelViewSet):
     serializer_class = LabelSerializer
