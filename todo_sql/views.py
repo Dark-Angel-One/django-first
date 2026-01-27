@@ -36,7 +36,7 @@ class NoteListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(title__icontains=query) | Q(content__icontains=query)
             )
-        return queryset.order_by('-is_pinned', '-updated_at')
+        return queryset.prefetch_related('labels', 'checklist_items').order_by('-is_pinned', '-updated_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -50,7 +50,7 @@ class ArchiveView(LoginRequiredMixin, ListView):
     context_object_name = 'notes'
 
     def get_queryset(self):
-        return Note.objects.filter(user=self.request.user, is_archived=True, is_trashed=False).order_by('-updated_at')
+        return Note.objects.filter(user=self.request.user, is_archived=True, is_trashed=False).prefetch_related('labels', 'checklist_items').order_by('-updated_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -64,7 +64,7 @@ class TrashView(LoginRequiredMixin, ListView):
     context_object_name = 'notes'
 
     def get_queryset(self):
-        return Note.objects.filter(user=self.request.user, is_trashed=True).order_by('-updated_at')
+        return Note.objects.filter(user=self.request.user, is_trashed=True).prefetch_related('labels', 'checklist_items').order_by('-updated_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -83,7 +83,7 @@ class RemindersView(LoginRequiredMixin, ListView):
             reminder_date__isnull=False,
             is_archived=False,
             is_trashed=False
-        ).order_by('reminder_date')
+        ).prefetch_related('labels', 'checklist_items').order_by('reminder_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -98,7 +98,7 @@ class LabelNoteView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         label_name = self.kwargs['label']
-        return Note.objects.filter(user=self.request.user, labels__name=label_name, is_archived=False, is_trashed=False).order_by('-updated_at')
+        return Note.objects.filter(user=self.request.user, labels__name=label_name, is_archived=False, is_trashed=False).prefetch_related('labels', 'checklist_items').order_by('-updated_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

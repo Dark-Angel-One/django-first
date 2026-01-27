@@ -357,15 +357,14 @@
         const div = document.createElement('div');
         div.className = 'flex items-center gap-2 group/item';
         div.innerHTML = `
-            <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none" onclick="this.textContent = this.textContent === 'check_box' ? 'check_box_outline_blank' : 'check_box'; this.nextElementSibling.dataset.checked = this.textContent === 'check_box';">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">
                 ${isChecked ? 'check_box' : 'check_box_outline_blank'}
             </span>
             <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
                 placeholder="List item"
                 value="${value}"
-                data-checked="${isChecked}"
-                onkeydown="handleChecklistKeydown(event, this)">
-            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity" onclick="this.parentElement.remove()">close</span>
+                data-checked="${isChecked}">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
         `;
 
         if (insertAfterNode && insertAfterNode.parentNode === container) {
@@ -511,78 +510,98 @@
     // --- Actions ---
 
     async function archiveNote(id) {
-        await fetch(`/api/v1/notes/${id}/archive/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-        // Remove from grid
-        document.querySelector(`.note-card[data-id="${id}"]`).remove();
+        const card = document.querySelector(`.note-card[data-id="${id}"]`);
+        if(!card) return;
+        card.style.display = 'none'; // Optimistic hide
+
+        try {
+            const res = await fetch(`/api/v1/notes/${id}/archive/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+            if(!res.ok) throw new Error('Failed');
+            card.remove();
+        } catch(e) {
+            card.style.display = '';
+            console.error(e);
+        }
     }
 
     async function trashNote(id) {
-        await fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        if(card) card.remove();
+        if(!card) return;
+        card.style.display = 'none'; // Optimistic hide
+
+        try {
+            const res = await fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+            if(!res.ok) throw new Error('Failed');
+            card.remove();
+        } catch(e) {
+            card.style.display = '';
+            console.error(e);
+        }
     }
 
     async function deleteNoteForever(id) {
-        await fetch(`/api/v1/notes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': csrftoken} });
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        if(card) card.remove();
+        if(!card) return;
+        card.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/v1/notes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': csrftoken} });
+            if(!res.ok) throw new Error('Failed');
+            card.remove();
+        } catch(e) {
+            card.style.display = '';
+            console.error(e);
+        }
     }
 
     async function togglePinNote(id) {
-        // Находим элементы карточки
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
+        if(!card) return;
         const pinBtnIcon = card.querySelector('button span.material-symbols-outlined');
         const pinContainer = card.querySelector('.absolute.top-2.right-2');
         const notesGrid = document.getElementById('notes-grid');
         
-        // Оптимистичное обновление UI (сразу меняем цвет, не дожидаясь ответа сервера)
-        const isCurrentlyPinned = pinBtnIcon.classList.contains('fill-1');
+        const wasPinned = card.dataset.pinned === 'true';
+        const newPinned = !wasPinned;
+
+        // Optimistic UI
+        pinBtnIcon.classList.toggle('fill-1', newPinned);
+        pinContainer.classList.toggle('opacity-100', newPinned);
+        card.dataset.pinned = newPinned ? 'true' : 'false';
         
-        if (!isCurrentlyPinned) {
-            pinBtnIcon.classList.add('fill-1');
-            pinContainer.classList.add('opacity-100');
+        const nextSibling = card.nextElementSibling; // For rollback
+
+        // Optimistic Sort
+        if (newPinned) {
+            notesGrid.prepend(card);
         } else {
-            pinBtnIcon.classList.remove('fill-1');
-            pinContainer.classList.remove('opacity-100');
+             const pinnedNotes = Array.from(notesGrid.querySelectorAll('.note-card[data-pinned="true"]'));
+             if (pinnedNotes.length > 0) {
+                 pinnedNotes[pinnedNotes.length-1].after(card);
+             } else {
+                 notesGrid.prepend(card);
+             }
         }
 
-        // Отправка запроса на сервер
         try {
             const res = await fetch(`/api/v1/notes/${id}/pin/`, { 
                 method: 'POST', 
                 headers: {'X-CSRFToken': csrftoken} 
             });
-            const data = await res.json();
-            
-            // Синхронизация UI
-            const isPinned = data.is_pinned;
-
-            if (isPinned !== undefined) {
-                pinBtnIcon.classList.toggle('fill-1', isPinned);
-                pinContainer.classList.toggle('opacity-100', isPinned);
-                card.dataset.pinned = isPinned ? 'true' : 'false';
-
-                // Сортировка (DOM Manipulation)
-                if (isPinned) {
-                    // Переместить в начало
-                    notesGrid.prepend(card);
-                } else {
-                    // Переместить после последней закрепленной заметки
-                    const pinnedNotes = Array.from(notesGrid.querySelectorAll('.note-card[data-pinned="true"]'));
-                    const otherPinned = pinnedNotes.filter(n => n !== card);
-
-                    if (otherPinned.length > 0) {
-                        const lastPinned = otherPinned[otherPinned.length - 1];
-                        lastPinned.after(card);
-                    } else {
-                        // Если нет других закрепленных, ставим в начало (так как она была только что изменена/создана)
-                        notesGrid.prepend(card);
-                    }
-                }
-            }
+            if(!res.ok) throw new Error('Failed');
         } catch (e) {
-            console.error("Ошибка при закреплении заметки:", e);
-            // Revert optimistic update on error? (Optional, skipping for now)
+            console.error("Pin failed", e);
+            // Rollback
+            pinBtnIcon.classList.toggle('fill-1', wasPinned);
+            pinContainer.classList.toggle('opacity-100', wasPinned);
+            card.dataset.pinned = wasPinned ? 'true' : 'false';
+            
+            // Restore position (approximate)
+             if(nextSibling && nextSibling.parentNode === notesGrid) {
+                notesGrid.insertBefore(card, nextSibling);
+            } else {
+                notesGrid.appendChild(card);
+            }
         }
     }
 
@@ -638,76 +657,260 @@
         const modal = document.getElementById('edit-modal');
         const content = document.getElementById('edit-modal-content');
 
-        let labelsHtml = '';
-        userLabels.forEach(label => {
-            const isChecked = note.labels.some(l => l.id === label.id) ? 'checked' : '';
-            labelsHtml += `
-            <label class="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                <input type="checkbox" name="edit_label_ids" value="${label.id}" ${isChecked} class="form-checkbox text-yellow-500 rounded focus:ring-0">
-                <span class="text-sm text-gray-800 dark:text-gray-200 truncate">${label.name}</span>
-            </label>`;
+        // Clear content
+        content.innerHTML = '';
+
+        // Helper to create element
+        const el = (tag, classes = '', props = {}) => {
+            const e = document.createElement(tag);
+            if(classes) e.className = classes;
+            for(const [k, v] of Object.entries(props)) {
+                if(k === 'dataset') {
+                    for(const [dk, dv] of Object.entries(v)) e.dataset[dk] = dv;
+                } else {
+                    e[k] = v;
+                }
+            }
+            return e;
+        };
+
+        // Header (Title + Pin)
+        const header = el('div', 'flex justify-between items-start mb-2');
+        const titleInput = el('input', 'w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200', {
+            type: 'text', placeholder: 'Title', id: 'edit-title', value: note.title
         });
 
-        const reminderVal = note.reminder_date ? note.reminder_date.slice(0, 16) : '';
+        const pinBtn = el('button', 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full', {type: 'button'});
+        pinBtn.onclick = () => toggleEditPin(pinBtn);
+        const pinIcon = el('span', `material-symbols-outlined icon-pin ${note.is_pinned ? 'fill-1' : ''}`);
+        pinIcon.textContent = 'keep';
+        pinBtn.appendChild(pinIcon);
 
-        content.innerHTML = `
-            <div class="flex justify-between items-start mb-2">
-                <input type="text" id="edit-title" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Title" value="${note.title}">
-                <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="toggleEditPin(this)">
-                    <span class="material-symbols-outlined icon-pin ${note.is_pinned ? 'fill-1' : ''}">keep</span>
-                </button>
-                <input type="hidden" id="edit-is-pinned" value="${note.is_pinned}">
-            </div>
+        const isPinnedInput = el('input', '', {type: 'hidden', id: 'edit-is-pinned', value: note.is_pinned});
 
-            <textarea id="edit-content" class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[100px]" placeholder="Note">${note.content}</textarea>
+        header.append(titleInput, pinBtn, isPinnedInput);
+        content.append(header);
 
-            <div class="flex justify-between items-center mt-4">
-                <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
-                    <!-- Color -->
-                    <div class="relative">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
-                            <span class="material-symbols-outlined text-[18px]">palette</span>
-                        </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden menu-dropdown border dark:border-gray-700 z-20 flex-wrap w-48" onclick="event.stopPropagation()">
-                             ${['white','red','orange','yellow','green','teal','blue','darkblue','purple','pink','brown','gray'].map(c =>
-                                `<div class="w-6 h-6 rounded-full border cursor-pointer ${getColorClass(c)}" onclick="setEditColor('${c}')"></div>`
-                             ).join('')}
-                        </div>
-                    </div>
-                    <input type="hidden" id="edit-color" value="${note.color}">
+        // Content (Textarea or Checklist)
+        if (note.is_checklist) {
+             const checklistContainer = el('div', 'space-y-2 mb-2', {id: 'edit-checklist-container'});
+             const itemsContainer = el('div', '', {id: 'edit-checklist-items-form'});
 
-                    <!-- Labels -->
-                    <div class="relative">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
-                            <span class="material-symbols-outlined text-[18px]">label</span>
-                        </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto" onclick="event.stopPropagation()">
-                            ${labelsHtml}
-                        </div>
-                    </div>
+             // Sort items by order
+             note.checklist_items.sort((a,b) => a.order - b.order).forEach(item => {
+                 itemsContainer.appendChild(createChecklistItemElement(item.text, item.is_checked, item.id));
+             });
 
-                    <!-- Archive -->
-                    <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${note.is_archived ? 'text-gray-900 bg-gray-200 dark:bg-gray-600' : ''}" onclick="toggleEditArchive(this)">
-                        <span class="material-symbols-outlined text-[18px]">archive</span>
-                    </button>
-                    <input type="hidden" id="edit-is-archived" value="${note.is_archived}">
+             const addBtn = el('div', 'flex items-center gap-2 text-gray-500 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded');
+             addBtn.onclick = () => addChecklistItemInputEdit();
+             addBtn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span><span class="text-sm">List item</span>';
 
-                    <!-- Reminder -->
-                    <div class="relative">
-                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" onclick="event.stopPropagation(); toggleMenu(this)">
-                            <span class="material-symbols-outlined text-[18px]">notifications</span>
-                        </button>
-                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64" onclick="event.stopPropagation()">
-                             <input type="datetime-local" id="edit-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none" value="${reminderVal}">
-                        </div>
-                    </div>
-                </div>
-                <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200" onclick="saveEditedNote(${id})">Done</button>
-            </div>
-        `;
+             checklistContainer.append(itemsContainer, addBtn);
+             content.append(checklistContainer);
+
+             // Hidden content input for compatibility
+             content.append(el('textarea', 'hidden', {id: 'edit-content'}));
+        } else {
+            const textarea = el('textarea', 'w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[100px]', {
+                id: 'edit-content', placeholder: 'Note', value: note.content
+            });
+            content.append(textarea);
+        }
+
+        // Footer Actions
+        const footer = el('div', 'flex justify-between items-center mt-4');
+        const actionsLeft = el('div', 'flex gap-1 text-gray-600 dark:text-gray-400 items-center');
+
+        // Color Picker
+        const colorWrapper = el('div', 'relative');
+        const colorBtn = el('button', 'p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700', {type: 'button', title: 'Color'});
+        colorBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(colorBtn); };
+        colorBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">palette</span>';
+
+        const colorMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden menu-dropdown border dark:border-gray-700 z-20 flex-wrap w-48');
+        colorMenu.onclick = (e) => e.stopPropagation();
+        ['white','red','orange','yellow','green','teal','blue','darkblue','purple','pink','brown','gray'].forEach(c => {
+            const circle = el('div', `w-6 h-6 rounded-full border cursor-pointer ${getColorClass(c)}`);
+            circle.onclick = () => setEditColor(c);
+            colorMenu.appendChild(circle);
+        });
+        colorWrapper.append(colorBtn, colorMenu);
+        actionsLeft.append(colorWrapper);
+
+        // Hidden Inputs
+        content.append(el('input', '', {type: 'hidden', id: 'edit-color', value: note.color}));
+        content.append(el('input', '', {type: 'hidden', id: 'edit-is-archived', value: note.is_archived}));
+        content.append(el('input', '', {type: 'hidden', id: 'edit-is-checklist', value: note.is_checklist}));
+
+        // Labels
+        const labelWrapper = el('div', 'relative');
+        const labelBtn = el('button', 'p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700', {type: 'button', title: 'Labels'});
+        labelBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(labelBtn); };
+        labelBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">label</span>';
+
+        const labelMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto');
+        labelMenu.onclick = (e) => e.stopPropagation();
+
+        userLabels.forEach(label => {
+            const isChecked = note.labels.some(l => l.id === label.id);
+            const lLabel = el('label', 'flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer');
+            const lInput = el('input', 'form-checkbox text-yellow-500 rounded focus:ring-0', {
+                type: 'checkbox', name: 'edit_label_ids', value: label.id, checked: isChecked
+            });
+            const lSpan = el('span', 'text-sm text-gray-800 dark:text-gray-200 truncate');
+            lSpan.textContent = label.name;
+            lLabel.append(lInput, lSpan);
+            labelMenu.appendChild(lLabel);
+        });
+        labelWrapper.append(labelBtn, labelMenu);
+        actionsLeft.append(labelWrapper);
+
+        // Archive
+        const archiveBtn = el('button', `p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${note.is_archived ? 'text-gray-900 bg-gray-200 dark:bg-gray-600' : ''}`, {type: 'button'});
+        archiveBtn.onclick = () => toggleEditArchive(archiveBtn);
+        archiveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">archive</span>';
+        actionsLeft.append(archiveBtn);
+
+        // Reminder
+        const remindWrapper = el('div', 'relative');
+        const remindBtn = el('button', 'p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700', {type: 'button'});
+        remindBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(remindBtn); };
+        remindBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">notifications</span>';
+
+        const remindMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64');
+        remindMenu.onclick = (e) => e.stopPropagation();
+        const remindInput = el('input', 'w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none', {
+            type: 'datetime-local', id: 'edit-reminder-date', value: note.reminder_date ? note.reminder_date.slice(0, 16) : ''
+        });
+        remindMenu.appendChild(remindInput);
+        remindWrapper.append(remindBtn, remindMenu);
+        actionsLeft.append(remindWrapper);
+
+        footer.append(actionsLeft);
+
+        // Done Button
+        const doneBtn = el('button', 'px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200', {type: 'button'});
+        doneBtn.textContent = 'Done';
+        doneBtn.onclick = () => saveEditedNote(id);
+        footer.append(doneBtn);
+
+        content.append(footer);
 
         setEditColor(note.color);
         modal.classList.remove('hidden');
+    }
+
+    function createChecklistItemElement(text, isChecked, id=null) {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 group/item';
+        div.innerHTML = `
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">
+                ${isChecked ? 'check_box' : 'check_box_outline_blank'}
+            </span>
+            <input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
+                placeholder="List item"
+                value="">
+            <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
+        `;
+        // Safe value assignment
+        const input = div.querySelector('input');
+        input.value = text;
+        if(id) input.dataset.id = id;
+        input.dataset.checked = isChecked;
+        return div;
+    }
+
+    // --- Event Delegation ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Create Note Form Delegation
+        const checklistItemsForm = document.getElementById('checklist-items-form');
+        if(checklistItemsForm) {
+            checklistItemsForm.addEventListener('click', (e) => {
+                const target = e.target;
+                if(target.matches('.material-symbols-outlined')) {
+                     const item = target.closest('.group\\/item');
+                     if(item) {
+                         // Checkbox
+                         if(target === item.firstElementChild) {
+                             const input = item.querySelector('input');
+                             const isChecked = input.dataset.checked === 'true';
+                             input.dataset.checked = !isChecked;
+                             target.textContent = !isChecked ? 'check_box' : 'check_box_outline_blank';
+                         }
+                         // Close
+                         if(target === item.lastElementChild) {
+                             item.remove();
+                         }
+                     }
+                }
+            });
+            checklistItemsForm.addEventListener('keydown', (e) => {
+                if(e.target.matches('.checklist-item-input')) {
+                    handleChecklistKeydown(e, e.target);
+                }
+            });
+        }
+
+        // Edit Modal Delegation
+        const editModalContent = document.getElementById('edit-modal-content');
+        if(editModalContent) {
+            editModalContent.addEventListener('click', (e) => {
+                const target = e.target;
+                if(target.matches('.material-symbols-outlined')) {
+                     const item = target.closest('.group\\/item');
+                     if(item) {
+                         // Checkbox
+                         if(target === item.firstElementChild) {
+                             const input = item.querySelector('input');
+                             const isChecked = input.dataset.checked === 'true';
+                             input.dataset.checked = !isChecked;
+                             target.textContent = !isChecked ? 'check_box' : 'check_box_outline_blank';
+                         }
+                         // Close
+                         if(target === item.lastElementChild) {
+                             item.remove();
+                         }
+                     }
+                }
+            });
+            editModalContent.addEventListener('keydown', (e) => {
+                if(e.target.matches('.edit-checklist-item-input')) {
+                    handleChecklistKeydownEdit(e, e.target);
+                }
+            });
+        }
+    });
+
+    function addChecklistItemInputEdit(value='', isChecked=false, insertAfterNode=null) {
+        const container = document.getElementById('edit-checklist-items-form');
+        const el = createChecklistItemElement(value, isChecked);
+        if (insertAfterNode && insertAfterNode.parentNode === container) {
+            if (insertAfterNode.nextSibling) {
+                container.insertBefore(el, insertAfterNode.nextSibling);
+            } else {
+                container.appendChild(el);
+            }
+        } else {
+            container.appendChild(el);
+        }
+        el.querySelector('input').focus();
+    }
+
+    function handleChecklistKeydownEdit(event, input) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            addChecklistItemInputEdit('', false, input.parentElement);
+        } else if (event.key === 'Backspace' && input.value === '' && document.getElementById('edit-checklist-items-form').children.length > 1) {
+            event.preventDefault();
+            const prev = input.parentElement.previousElementSibling;
+            input.parentElement.remove();
+            if (prev) {
+                const prevInput = prev.querySelector('input');
+                prevInput.focus();
+                const len = prevInput.value.length;
+                prevInput.setSelectionRange(len, len);
+            }
+        }
     }
 
     function closeEditModal(e) {
@@ -718,21 +921,37 @@
 
     async function saveEditedNote(id) {
         const title = document.getElementById('edit-title').value;
-        const content = document.getElementById('edit-content').value;
+        const content = document.getElementById('edit-content') ? document.getElementById('edit-content').value : '';
         const isPinned = document.getElementById('edit-is-pinned').value === 'true';
         const isArchived = document.getElementById('edit-is-archived').value === 'true';
+        const isChecklist = document.getElementById('edit-is-checklist').value === 'true';
         const color = document.getElementById('edit-color').value;
         const reminderDate = document.getElementById('edit-reminder-date').value;
 
         const labelCheckboxes = document.querySelectorAll('input[name="edit_label_ids"]:checked');
         const labelIds = Array.from(labelCheckboxes).map(cb => parseInt(cb.value));
 
+        let checklistItems = [];
+        if (isChecklist) {
+            document.querySelectorAll('#edit-checklist-items-form .edit-checklist-item-input').forEach((input, index) => {
+                if(input.value.trim()) {
+                    checklistItems.push({
+                        text: input.value.trim(),
+                        is_checked: input.dataset.checked === 'true',
+                        order: index,
+                        id: input.dataset.id ? parseInt(input.dataset.id) : undefined
+                    });
+                }
+            });
+        }
+
         await fetch(`/api/v1/notes/${id}/`, {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
             body: JSON.stringify({
                 title, content, is_pinned: isPinned, is_archived: isArchived,
-                color, reminder_date: reminderDate || null, label_ids: labelIds
+                color, reminder_date: reminderDate || null, label_ids: labelIds,
+                checklist_items: isChecklist ? checklistItems : undefined
             })
         });
 
