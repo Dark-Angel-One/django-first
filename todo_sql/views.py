@@ -108,34 +108,6 @@ class LabelNoteView(LoginRequiredMixin, ListView):
         context['active_label'] = self.kwargs['label']
         return context
 
-@login_required
-@require_POST
-def create_note_ajax(request):
-    try:
-        # Check if data is JSON (fetch) or Form Data (standard submit fallback)
-        if request.content_type == 'application/json':
-            data = json.loads(request.body)
-        else:
-            data = request.POST.dict()
-
-        serializer = NoteSerializer(data=data)
-        if serializer.is_valid():
-            note = serializer.save(user=request.user)
-            return JsonResponse({
-                'success': True,
-                'note': {
-                    'id': note.id,
-                    'title': note.title,
-                    'content': note.content,
-                    'color': note.color,
-                    'is_pinned': note.is_pinned,
-                }
-            })
-        else:
-            return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
-
 class NoteUpdateView(LoginRequiredMixin, UpdateView):
     model = Note
     form_class = NoteForm
