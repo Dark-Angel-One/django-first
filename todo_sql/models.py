@@ -39,6 +39,7 @@ class Note(models.Model):
     reminder_date = models.DateTimeField(null=True, blank=True, verbose_name="Напоминание")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания", db_index=True)
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления", db_index=True)
+    order = models.PositiveIntegerField(default=0, db_index=True)
 
     def __str__(self):
         return self.title if self.title else (self.content[:20] if self.content else "Note")
@@ -46,7 +47,7 @@ class Note(models.Model):
     class Meta:
         verbose_name = 'Заметка'
         verbose_name_plural = 'Заметки'
-        ordering = ['-is_pinned', '-updated_at']
+        ordering = ['-is_pinned', 'order', '-updated_at']
 
 class ChecklistItem(models.Model):
     note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name='checklist_items')

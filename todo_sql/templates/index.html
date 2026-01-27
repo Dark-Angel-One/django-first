@@ -116,17 +116,36 @@
 
 <!-- Notes Grid -->
 <div class="p-4">
-    <div class="bento-grid" id="notes-grid">
-        {% for note in notes %}
-             {% include 'partials/note_card.html' with note=note %}
-        {% empty %}
-            <!-- Handled by JS or Initial View -->
-            <div id="empty-state" class="col-span-full text-center text-gray-500 py-10 w-full">
-                <span class="material-symbols-outlined text-6xl opacity-50">lightbulb</span>
-                <p class="mt-2 text-lg">Notes you add appear here</p>
-            </div>
-        {% endfor %}
+    <!-- Pinned Notes -->
+    <div id="pinned-container" class="mb-8">
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="pinned-title">Pinned</h6>
+        <div class="bento-grid" id="pinned-notes">
+            {% for note in notes %}
+                {% if note.is_pinned %}
+                    {% include 'partials/note_card.html' with note=note %}
+                {% endif %}
+            {% endfor %}
+        </div>
     </div>
+
+    <!-- Other Notes -->
+    <div id="others-container">
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="others-title">Others</h6>
+        <div class="bento-grid" id="other-notes">
+            {% for note in notes %}
+                {% if not note.is_pinned %}
+                    {% include 'partials/note_card.html' with note=note %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if not notes %}
+        <div id="empty-state" class="col-span-full text-center text-gray-500 py-10 w-full">
+            <span class="material-symbols-outlined text-6xl opacity-50">lightbulb</span>
+            <p class="mt-2 text-lg">Notes you add appear here</p>
+        </div>
+    {% endif %}
 
     <!-- Pagination Controls -->
     {% if is_paginated %}
@@ -169,6 +188,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
     // --- CSRF Token Helper ---
     function getCookie(name) {
@@ -206,9 +226,95 @@
     // --- State & DOM ---
     const createNoteCollapsed = document.getElementById('create-note-collapsed');
     const createNoteForm = document.getElementById('create-note-form');
-    const notesGrid = document.getElementById('notes-grid');
+    // const notesGrid = document.getElementById('notes-grid'); // REMOVE
+    const pinnedGrid = document.getElementById('pinned-notes');
+    const otherGrid = document.getElementById('other-notes');
+    const pinnedTitle = document.getElementById('pinned-title');
+    const othersTitle = document.getElementById('others-title');
     const emptyState = document.getElementById('empty-state');
     const globalSearch = document.getElementById('global-search');
+
+    // --- SortableJS ---
+    function initSortable() {
+        if (!pinnedGrid || !otherGrid) return;
+
+        const opts = {
+            group: 'notes',
+            animation: 150,
+            delay: 100,
+            draggable: '.note-card',
+            onEnd: function (evt) {
+                const item = evt.item;
+                const newContainerId = item.parentElement.id;
+                const isNowPinned = newContainerId === 'pinned-notes';
+
+                updateCardPinVisuals(item, isNowPinned);
+                updateSectionTitles();
+                persistReorder();
+            }
+        };
+
+        new Sortable(pinnedGrid, opts);
+        new Sortable(otherGrid, opts);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initSortable();
+        updateSectionTitles();
+    });
+
+    function updateCardPinVisuals(card, isPinned) {
+        card.dataset.pinned = isPinned ? 'true' : 'false';
+        const pinBtnIcon = card.querySelector('.absolute.top-2.right-2 button span');
+        const pinContainer = card.querySelector('.absolute.top-2.right-2');
+
+        if (isPinned) {
+            pinBtnIcon.classList.add('fill-1');
+            pinContainer.classList.add('opacity-100');
+        } else {
+            pinBtnIcon.classList.remove('fill-1');
+            pinContainer.classList.remove('opacity-100');
+        }
+    }
+
+    function updateSectionTitles() {
+        const hasPinned = pinnedGrid.children.length > 0;
+
+        if (hasPinned) {
+            pinnedTitle.classList.remove('hidden');
+            othersTitle.classList.remove('hidden');
+        } else {
+            pinnedTitle.classList.add('hidden');
+            othersTitle.classList.add('hidden');
+        }
+
+        const pinnedContainer = document.getElementById('pinned-container');
+        if (!hasPinned) pinnedContainer.classList.add('hidden');
+        else pinnedContainer.classList.remove('hidden');
+
+        if (emptyState) {
+            if (pinnedGrid.children.length === 0 && otherGrid.children.length === 0) emptyState.style.display = 'block';
+            else emptyState.style.display = 'none';
+        }
+    }
+
+    async function persistReorder() {
+        const pinnedIds = Array.from(pinnedGrid.children).map(el => parseInt(el.dataset.id));
+        const otherIds = Array.from(otherGrid.children).map(el => parseInt(el.dataset.id));
+
+        try {
+            await fetch('/api/v1/notes/reorder/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ pinned_ids: pinnedIds, other_ids: otherIds })
+            });
+        } catch (e) {
+            console.error("Reorder failed", e);
+        }
+    }
 
     const userLabels = [
         {% for label in user_labels %}
@@ -426,25 +532,16 @@
 
     function prependNoteToGrid(note) {
         const html = createNoteCardHTML(note);
-
-        // We use a temp container to convert string to node
         const temp = document.createElement('div');
         temp.innerHTML = html;
         const noteNode = temp.firstElementChild;
 
         if (note.is_pinned) {
-            notesGrid.prepend(noteNode);
+            pinnedGrid.prepend(noteNode);
         } else {
-            const pinnedNotes = notesGrid.querySelectorAll('.note-card[data-pinned="true"]');
-            if (pinnedNotes.length > 0) {
-                // Insert after the last pinned note
-                pinnedNotes[pinnedNotes.length - 1].after(noteNode);
-            } else {
-                notesGrid.prepend(noteNode);
-            }
+            otherGrid.prepend(noteNode);
         }
-
-        if(emptyState) emptyState.style.display = 'none';
+        updateSectionTitles();
     }
 
     function createNoteCardHTML(note) {
@@ -583,31 +680,18 @@
     async function togglePinNote(id) {
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
         if(!card) return;
-        const pinBtnIcon = card.querySelector('button span.material-symbols-outlined');
-        const pinContainer = card.querySelector('.absolute.top-2.right-2');
-        const notesGrid = document.getElementById('notes-grid');
         
         const wasPinned = card.dataset.pinned === 'true';
         const newPinned = !wasPinned;
 
-        // Optimistic UI
-        pinBtnIcon.classList.toggle('fill-1', newPinned);
-        pinContainer.classList.toggle('opacity-100', newPinned);
-        card.dataset.pinned = newPinned ? 'true' : 'false';
+        updateCardPinVisuals(card, newPinned);
         
-        const nextSibling = card.nextElementSibling; // For rollback
-
-        // Optimistic Sort
         if (newPinned) {
-            notesGrid.prepend(card);
+            pinnedGrid.prepend(card);
         } else {
-             const pinnedNotes = Array.from(notesGrid.querySelectorAll('.note-card[data-pinned="true"]'));
-             if (pinnedNotes.length > 0) {
-                 pinnedNotes[pinnedNotes.length-1].after(card);
-             } else {
-                 notesGrid.prepend(card);
-             }
+            otherGrid.prepend(card);
         }
+        updateSectionTitles();
 
         try {
             const res = await fetch(`/api/v1/notes/${id}/pin/`, { 
@@ -617,17 +701,7 @@
             if(!res.ok) throw new Error('Failed');
         } catch (e) {
             console.error("Pin failed", e);
-            // Rollback
-            pinBtnIcon.classList.toggle('fill-1', wasPinned);
-            pinContainer.classList.toggle('opacity-100', wasPinned);
-            card.dataset.pinned = wasPinned ? 'true' : 'false';
-            
-            // Restore position (approximate)
-             if(nextSibling && nextSibling.parentNode === notesGrid) {
-                notesGrid.insertBefore(card, nextSibling);
-            } else {
-                notesGrid.appendChild(card);
-            }
+            window.location.reload();
         }
     }
 
@@ -663,17 +737,17 @@
         const res = await fetch(url);
         const data = await res.json();
 
-        notesGrid.innerHTML = '';
-        if (data.results) { // DRF paginated response
-            if(data.results.length === 0) {
-                 notesGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No results found</div>';
-            } else {
-                data.results.forEach(note => prependNoteToGrid(note));
-            }
+        pinnedGrid.innerHTML = '';
+        otherGrid.innerHTML = '';
+
+        const notes = data.results || data;
+
+        if (notes.length === 0 && query) {
+             otherGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No results found</div>';
         } else {
-            // If pagination is off or list
-             data.forEach(note => prependNoteToGrid(note));
+            [...notes].reverse().forEach(note => prependNoteToGrid(note));
         }
+        updateSectionTitles();
     }
 
     // --- Edit Modal ---
