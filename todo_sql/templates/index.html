@@ -426,17 +426,24 @@
 
     function prependNoteToGrid(note) {
         const html = createNoteCardHTML(note);
-        const div = document.createElement('div');
-        // Grid items don't need a wrapper div if the HTML string is the card itself
-        // But createNoteCardHTML returns string. We need to insert it.
-        // note_card.html outer element is <div class="note-card ...">
 
         // We use a temp container to convert string to node
         const temp = document.createElement('div');
         temp.innerHTML = html;
         const noteNode = temp.firstElementChild;
 
-        notesGrid.prepend(noteNode);
+        if (note.is_pinned) {
+            notesGrid.prepend(noteNode);
+        } else {
+            const pinnedNotes = notesGrid.querySelectorAll('.note-card[data-pinned="true"]');
+            if (pinnedNotes.length > 0) {
+                // Insert after the last pinned note
+                pinnedNotes[pinnedNotes.length - 1].after(noteNode);
+            } else {
+                notesGrid.prepend(noteNode);
+            }
+        }
+
         if(emptyState) emptyState.style.display = 'none';
     }
 
@@ -509,49 +516,51 @@
 
     // --- Actions ---
 
-    async function archiveNote(id) {
+    async function performOptimisticRemove(id, apiPromise) {
         const card = document.querySelector(`.note-card[data-id="${id}"]`);
         if(!card) return;
-        card.style.display = 'none'; // Optimistic hide
+
+        // Save state for rollback
+        const parent = card.parentNode;
+        const nextSibling = card.nextSibling;
+
+        // Optimistic Remove
+        card.remove();
 
         try {
-            const res = await fetch(`/api/v1/notes/${id}/archive/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-            if(!res.ok) throw new Error('Failed');
-            card.remove();
-        } catch(e) {
-            card.style.display = '';
+            const res = await apiPromise();
+            // 404 is success (idempotent), 2xx is success
+            if (!res.ok && res.status !== 404) {
+                 throw new Error(`Failed with status ${res.status}`);
+            }
+        } catch (e) {
             console.error(e);
+            // Restore
+            if (nextSibling) {
+                parent.insertBefore(card, nextSibling);
+            } else {
+                parent.appendChild(card);
+            }
+            showToast("Action failed");
         }
     }
 
-    async function trashNote(id) {
-        const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        if(!card) return;
-        card.style.display = 'none'; // Optimistic hide
-
-        try {
-            const res = await fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
-            if(!res.ok) throw new Error('Failed');
-            card.remove();
-        } catch(e) {
-            card.style.display = '';
-            console.error(e);
-        }
+    function archiveNote(id) {
+        performOptimisticRemove(id, () =>
+            fetch(`/api/v1/notes/${id}/archive/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} })
+        );
     }
 
-    async function deleteNoteForever(id) {
-        const card = document.querySelector(`.note-card[data-id="${id}"]`);
-        if(!card) return;
-        card.style.display = 'none';
+    function trashNote(id) {
+        performOptimisticRemove(id, () =>
+            fetch(`/api/v1/notes/${id}/trash/`, { method: 'POST', headers: {'X-CSRFToken': csrftoken} })
+        );
+    }
 
-        try {
-            const res = await fetch(`/api/v1/notes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': csrftoken} });
-            if(!res.ok) throw new Error('Failed');
-            card.remove();
-        } catch(e) {
-            card.style.display = '';
-            console.error(e);
-        }
+    function deleteNoteForever(id) {
+        performOptimisticRemove(id, () =>
+            fetch(`/api/v1/notes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': csrftoken} })
+        );
     }
 
     async function togglePinNote(id) {

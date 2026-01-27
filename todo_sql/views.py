@@ -11,6 +11,7 @@ import json
 
 from .models import Note
 from .forms import NoteForm, UserRegistrationForm
+from .serializers import NoteSerializer
 
 def register(request):
     if request.method == 'POST':
@@ -114,14 +115,12 @@ def create_note_ajax(request):
         # Check if data is JSON (fetch) or Form Data (standard submit fallback)
         if request.content_type == 'application/json':
             data = json.loads(request.body)
-            form = NoteForm(data)
         else:
-            form = NoteForm(request.POST)
+            data = request.POST.dict()
 
-        if form.is_valid():
-            note = form.save(commit=False)
-            note.user = request.user
-            note.save()
+        serializer = NoteSerializer(data=data)
+        if serializer.is_valid():
+            note = serializer.save(user=request.user)
             return JsonResponse({
                 'success': True,
                 'note': {
@@ -133,7 +132,7 @@ def create_note_ajax(request):
                 }
             })
         else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+            return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 

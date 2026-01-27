@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import F, Case, When, Value
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Note, Label, ChecklistItem
 from .serializers import NoteSerializer, LabelSerializer, ChecklistItemSerializer
@@ -42,7 +43,8 @@ class NoteViewSet(viewsets.ModelViewSet):
         # Используем оптимизированный метод обновления (без лишнего запроса в БД)
         updated = Note.objects.filter(pk=pk, user=request.user).update(
             is_archived=Case(When(is_archived=True, then=Value(False)), default=Value(True)),
-            is_trashed=Case(When(is_archived=False, then=Value(False)), default=F('is_trashed'))
+            is_trashed=Case(When(is_archived=False, then=Value(False)), default=F('is_trashed')),
+            updated_at=timezone.now()
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -55,7 +57,8 @@ class NoteViewSet(viewsets.ModelViewSet):
         # Используем оптимизированный метод с переключением состояния (Toggle)
         updated = Note.objects.filter(pk=pk, user=request.user).update(
             is_trashed=Case(When(is_trashed=True, then=Value(False)), default=Value(True)),
-            is_archived=Case(When(is_trashed=False, then=Value(False)), default=F('is_archived'))
+            is_archived=Case(When(is_trashed=False, then=Value(False)), default=F('is_archived')),
+            updated_at=timezone.now()
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -66,7 +69,8 @@ class NoteViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def pin(self, request, pk=None):
         updated = Note.objects.filter(pk=pk, user=request.user).update(
-            is_pinned=Case(When(is_pinned=True, then=Value(False)), default=Value(True))
+            is_pinned=Case(When(is_pinned=True, then=Value(False)), default=Value(True)),
+            updated_at=timezone.now()
         )
         if updated == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
