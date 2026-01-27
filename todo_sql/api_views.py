@@ -24,7 +24,7 @@ class NoteViewSet(viewsets.ModelViewSet):
     ordering = ['-is_pinned', '-updated_at']
 
     def get_queryset(self):
-        queryset = Note.objects.filter(user=self.request.user)
+        queryset = Note.objects.filter(user=self.request.user).prefetch_related('labels', 'checklist_items')
 
         if 'is_archived' not in self.request.query_params:
             queryset = queryset.filter(is_archived=False)
