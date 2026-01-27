@@ -11,6 +11,7 @@ import json
 
 from .models import Note
 from .forms import NoteForm, UserRegistrationForm
+from .serializers import NoteSerializer
 
 def register(request):
     if request.method == 'POST':
@@ -106,36 +107,6 @@ class LabelNoteView(LoginRequiredMixin, ListView):
         context['active_tab'] = 'label'
         context['active_label'] = self.kwargs['label']
         return context
-
-@login_required
-@require_POST
-def create_note_ajax(request):
-    try:
-        # Check if data is JSON (fetch) or Form Data (standard submit fallback)
-        if request.content_type == 'application/json':
-            data = json.loads(request.body)
-            form = NoteForm(data)
-        else:
-            form = NoteForm(request.POST)
-
-        if form.is_valid():
-            note = form.save(commit=False)
-            note.user = request.user
-            note.save()
-            return JsonResponse({
-                'success': True,
-                'note': {
-                    'id': note.id,
-                    'title': note.title,
-                    'content': note.content,
-                    'color': note.color,
-                    'is_pinned': note.is_pinned,
-                }
-            })
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
 class NoteUpdateView(LoginRequiredMixin, UpdateView):
     model = Note
