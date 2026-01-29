@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Notes</title>
+    <title>Регистрация - Заметки</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,7 +29,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-keep-bg-dark flex items-center justify-center h-screen transition-colors">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Create Account</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Создать аккаунт</h2>
         <form method="post" class="space-y-4">
             {% csrf_token %}
 
@@ -54,11 +54,11 @@
             {% endfor %}
 
             <button class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                Register
+                Зарегистрироваться
             </button>
         </form>
         <p class="mt-4 text-center text-gray-600 dark:text-gray-400 text-sm">
-            Already have an account? <a href="{% url 'login' %}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">Login</a>
+            Уже есть аккаунт? <a href="{% url 'login' %}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">Войти</a>
         </p>
     </div>
 </body>

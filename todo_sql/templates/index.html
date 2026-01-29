@@ -5,7 +5,7 @@
    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
        <span class="material-symbols-outlined text-gray-500">search</span>
    </div>
-   <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Search">
+   <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Поиск">
 </div>
 {% endblock %}
 
@@ -16,9 +16,9 @@
     <div class="w-full max-w-2xl relative">
         <!-- Collapsed State -->
         <div id="create-note-collapsed" class="bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-md p-3 text-gray-500 font-medium cursor-text flex justify-between items-center transition-all" onclick="showCreateNote()">
-            <span>Take a note...</span>
+            <span>Заметка...</span>
             <div class="flex gap-2 text-gray-500">
-                <button class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="New List" onclick="event.stopPropagation(); showCreateNote(true);">
+                <button class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Новый список" onclick="event.stopPropagation(); showCreateNote(true);">
                     <span class="material-symbols-outlined">check_box</span>
                 </button>
             </div>
@@ -27,7 +27,7 @@
         <!-- Expanded Form -->
         <form id="create-note-form" class="hidden bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 transition-all relative">
             <div class="flex justify-between items-start mb-2">
-                <input type="text" name="title" placeholder="Title" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
+                <input type="text" name="title" placeholder="Заголовок" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
                 <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="togglePinForm(this)">
                     <span class="material-symbols-outlined icon-pin">keep</span>
                 </button>
@@ -35,7 +35,7 @@
             </div>
 
             <!-- Text Content -->
-            <textarea name="content" id="note-content-input" placeholder="Take a note..." class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
+            <textarea name="content" id="note-content-input" placeholder="Заметка..." class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
 
             <!-- Checklist Content (Hidden by default) -->
             <div id="checklist-container" class="hidden space-y-2 mb-2">
@@ -44,7 +44,7 @@
                 </div>
                 <div class="flex items-center gap-2 text-gray-500 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded" onclick="addChecklistItemInput()">
                     <span class="material-symbols-outlined text-sm">add</span>
-                    <span class="text-sm">List item</span>
+                    <span class="text-sm">Пункт списка</span>
                 </div>
             </div>
 
@@ -105,8 +105,8 @@
                      </div>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleDiscardNote()">Discard</button>
-                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleSaveNote()">Save</button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleDiscardNote()">Отмена</button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleSaveNote()">Сохранить</button>
                 </div>
             </div>
         </form>
@@ -118,7 +118,7 @@
 <div class="p-4">
     <!-- Pinned Notes -->
     <div id="pinned-container" class="mb-8">
-        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="pinned-title">Pinned</h6>
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="pinned-title">Закрепленные</h6>
         <div class="bento-grid" id="pinned-notes">
             {% for note in notes %}
                 {% if note.is_pinned %}
@@ -130,7 +130,7 @@
 
     <!-- Other Notes -->
     <div id="others-container">
-        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="others-title">Others</h6>
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="others-title">Другие</h6>
         <div class="bento-grid" id="other-notes">
             {% for note in notes %}
                 {% if not note.is_pinned %}
@@ -143,7 +143,7 @@
     {% if not notes %}
         <div id="empty-state" class="col-span-full text-center text-gray-500 py-10 w-full">
             <span class="material-symbols-outlined text-6xl opacity-50">lightbulb</span>
-            <p class="mt-2 text-lg">Notes you add appear here</p>
+            <p class="mt-2 text-lg">Здесь будут ваши заметки</p>
         </div>
     {% endif %}
 
@@ -162,7 +162,7 @@
             {% endif %}
 
             <span class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
             </span>
 
             {% if page_obj.has_next %}
@@ -466,7 +466,7 @@
                 ${isChecked ? 'check_box' : 'check_box_outline_blank'}
             </span>
             <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
-                placeholder="List item"
+                placeholder="Пункт списка"
                 value="${value}"
                 data-checked="${isChecked}">
             <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
@@ -664,7 +664,7 @@
             } else {
                 parent.appendChild(card);
             }
-            showToast("Action failed");
+            showToast("Ошибка действия");
         }
     }
 
@@ -718,7 +718,7 @@
                 otherGrid.prepend(card);
             }
             updateSectionTitles();
-            showToast("Failed to pin note");
+            showToast("Не удалось закрепить");
         }
     }
 
@@ -760,7 +760,7 @@
         const notes = data.results || data;
 
         if (notes.length === 0 && query) {
-             otherGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No results found</div>';
+             otherGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Ничего не найдено</div>';
         } else {
             [...notes].reverse().forEach(note => prependNoteToGrid(note));
         }
@@ -794,7 +794,7 @@
         // Header (Title + Pin)
         const header = el('div', 'flex justify-between items-start mb-2');
         const titleInput = el('input', 'w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200', {
-            type: 'text', placeholder: 'Title', id: 'edit-title', value: note.title
+            type: 'text', placeholder: 'Заголовок', id: 'edit-title', value: note.title
         });
 
         const pinBtn = el('button', 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full', {type: 'button'});
@@ -820,7 +820,7 @@
 
              const addBtn = el('div', 'flex items-center gap-2 text-gray-500 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded');
              addBtn.onclick = () => addChecklistItemInputEdit();
-             addBtn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span><span class="text-sm">List item</span>';
+             addBtn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span><span class="text-sm">Пункт списка</span>';
 
              checklistContainer.append(itemsContainer, addBtn);
              content.append(checklistContainer);
@@ -829,7 +829,7 @@
              content.append(el('textarea', 'hidden', {id: 'edit-content'}));
         } else {
             const textarea = el('textarea', 'w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[100px]', {
-                id: 'edit-content', placeholder: 'Note', value: note.content
+                id: 'edit-content', placeholder: 'Заметка', value: note.content
             });
             content.append(textarea);
         }
@@ -907,7 +907,7 @@
 
         // Done Button
         const doneBtn = el('button', 'px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200', {type: 'button'});
-        doneBtn.textContent = 'Done';
+        doneBtn.textContent = 'Готово';
         doneBtn.onclick = () => saveEditedNote(id);
         footer.append(doneBtn);
 
@@ -925,7 +925,7 @@
                 ${isChecked ? 'check_box' : 'check_box_outline_blank'}
             </span>
             <input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
-                placeholder="List item"
+                placeholder="Пункт списка"
                 value="">
             <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
         `;
@@ -1151,7 +1151,7 @@
         } catch(e) { console.log("Audio play blocked (user interaction required)", e); }
 
         // 2. Notification
-        const msg = `Reminder: "${title}" moved to archive`;
+        const msg = `Напоминание: "${title}" перемещено в архив`;
         if (Notification.permission === "granted") {
             new Notification("Todo App", { body: msg });
         } else if (Notification.permission !== "denied") {

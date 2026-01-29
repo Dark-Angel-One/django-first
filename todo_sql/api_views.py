@@ -88,7 +88,7 @@ class NoteViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def empty_trash(self, request):
         count, _ = Note.objects.filter(user=request.user, is_trashed=True).delete()
-        return Response({'status': 'trash emptied', 'deleted_count': count})
+        return Response({'status': 'Корзина очищена', 'deleted_count': count})
 
     @action(detail=False, methods=['post'])
     def reorder(self, request):
@@ -118,7 +118,7 @@ class NoteViewSet(viewsets.ModelViewSet):
         if updates:
             Note.objects.bulk_update(updates, ['is_pinned', 'order'])
 
-        return Response({'status': 'reordered'})
+        return Response({'status': 'порядок обновлен'})
 
 class LabelViewSet(viewsets.ModelViewSet):
     serializer_class = LabelSerializer
