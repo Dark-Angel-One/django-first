@@ -6,11 +6,24 @@ class LabelSerializer(serializers.ModelSerializer):
         model = Label
         fields = ['id', 'name']
 
+    def validate_name(self, value):
+        user = self.context['request'].user
+        if Label.objects.filter(user=user, name=value).exists():
+            raise serializers.ValidationError("Label with this name already exists.")
+        return value
+
 class ChecklistItemSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    note = serializers.PrimaryKeyRelatedField(queryset=Note.objects.all(), required=False)
+
     class Meta:
         model = ChecklistItem
-        fields = ['id', 'text', 'is_checked', 'order']
-        read_only_fields = ['id']
+        fields = ['id', 'text', 'is_checked', 'order', 'note']
+
+    def validate_note(self, value):
+        if value and value.user != self.context['request'].user:
+            raise serializers.ValidationError("You cannot add items to another user's note.")
+        return value
 
 class NoteSerializer(serializers.ModelSerializer):
     checklist_items = ChecklistItemSerializer(many=True, required=False)
@@ -59,17 +72,32 @@ class NoteSerializer(serializers.ModelSerializer):
              instance.labels.set(labels)
 
         if checklist_items_data is not None:
-            # Smart update logic:
-            # If ID is present, update. If not, create.
-            # But the client might just send the whole list.
-            # Let's check if the client sends IDs.
-            # The current frontend implementation (Create) sends list without IDs.
-            # Edit implementation... we don't have a full Edit form yet.
-            # We need to support the "checklist toggling" feature requested.
+            # Smart update
+            existing_items = {item.id: item for item in instance.checklist_items.all()}
+            posted_items = []
 
-            # For now, let's keep the clear-and-recreate strategy as it is robust for this scope
-            instance.checklist_items.all().delete()
             for item_data in checklist_items_data:
-                ChecklistItem.objects.create(note=instance, **item_data)
+                item_id = item_data.get('id')
+                # If note is provided in nested data, remove it
+                if 'note' in item_data:
+                    del item_data['note']
+
+                if item_id and item_id in existing_items:
+                    # Update existing
+                    item = existing_items.pop(item_id)
+                    for attr, value in item_data.items():
+                        setattr(item, attr, value)
+                    item.save()
+                    posted_items.append(item)
+                else:
+                    # Create new
+                    if 'id' in item_data:
+                        del item_data['id']
+                    new_item = ChecklistItem.objects.create(note=instance, **item_data)
+                    posted_items.append(new_item)
+
+            # Delete remaining
+            for item in existing_items.values():
+                item.delete()
 
         return instance

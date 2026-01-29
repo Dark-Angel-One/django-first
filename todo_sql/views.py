@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, UpdateView, DeleteView
+from django.views.generic import ListView
 from django.views.decorators.http import require_POST
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,7 @@ from django.db.models import Q
 import json
 
 from .models import Note
-from .forms import NoteForm, UserRegistrationForm
+from .forms import UserRegistrationForm
 from .serializers import NoteSerializer
 
 def register(request):
@@ -107,20 +107,3 @@ class LabelNoteView(LoginRequiredMixin, ListView):
         context['active_tab'] = 'label'
         context['active_label'] = self.kwargs['label']
         return context
-
-class NoteUpdateView(LoginRequiredMixin, UpdateView):
-    model = Note
-    form_class = NoteForm
-    template_name = 'edit.html'
-    success_url = reverse_lazy('index')
-
-    def get_queryset(self):
-        return self.model.objects.filter(user=self.request.user)
-
-class NoteDeleteView(LoginRequiredMixin, DeleteView):
-    model = Note
-    template_name = 'delete.html'
-    success_url = reverse_lazy('index')
-
-    def get_queryset(self):
-        return self.model.objects.filter(user=self.request.user)

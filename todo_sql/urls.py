@@ -21,8 +21,4 @@ urlpatterns = [
 
     # API
     path('api/v1/', include(router.urls)),
-
-    # Legacy/Fallback Views
-    path('edit/<int:pk>/', views.NoteUpdateView.as_view(), name='edit'),
-    path('delete/<int:pk>/', views.NoteDeleteView.as_view(), name='delete'),
 ]
