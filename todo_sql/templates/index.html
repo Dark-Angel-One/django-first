@@ -226,7 +226,6 @@
     // --- State & DOM ---
     const createNoteCollapsed = document.getElementById('create-note-collapsed');
     const createNoteForm = document.getElementById('create-note-form');
-    // const notesGrid = document.getElementById('notes-grid'); // REMOVE
     const pinnedGrid = document.getElementById('pinned-notes');
     const otherGrid = document.getElementById('other-notes');
     const pinnedTitle = document.getElementById('pinned-title');
@@ -544,6 +543,16 @@
         updateSectionTitles();
     }
 
+    function escapeHtml(text) {
+        if (!text) return text;
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function createNoteCardHTML(note) {
         // Must match note_card.html logic.
         const colorClassMap = {
@@ -610,7 +619,7 @@
                 </button>
             </div>
             <div onclick="openEditModal(${note.id})" class="cursor-pointer flex-1">
-                ${note.title ? `<h3 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6">${note.title}</h3>` : ''}
+                ${note.title ? `<h3 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6">${escapeHtml(note.title)}</h3>` : ''}
                 ${contentHtml}
                 ${labelsHtml}
             </div>
@@ -701,7 +710,15 @@
             if(!res.ok) throw new Error('Failed');
         } catch (e) {
             console.error("Pin failed", e);
-            window.location.reload();
+            // Rollback
+            updateCardPinVisuals(card, wasPinned);
+            if (wasPinned) {
+                pinnedGrid.prepend(card);
+            } else {
+                otherGrid.prepend(card);
+            }
+            updateSectionTitles();
+            showToast("Failed to pin note");
         }
     }
 
