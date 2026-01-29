@@ -30,7 +30,7 @@ class SecurityTests(TestCase):
         data = {'name': 'Work'}
         response = self.client.post('/api/v1/labels/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('already exists', str(response.data))
+        self.assertIn('Метка с таким названием уже существует.', str(response.data))
 
     def test_checklist_smart_update(self):
         """Updating note should preserve checklist item IDs"""

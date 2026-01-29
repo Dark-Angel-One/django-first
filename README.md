@@ -1,102 +1,102 @@
-# Google Keep Clone - Academy Project
+# Клон Google Keep - Учебный проект
 
-A professional, "Pixel-perfect" clone of Google Keep, built with Django 6 and Tailwind CSS. This project demonstrates modern "Hybrid" web architecture, combining server-side rendering with a dynamic API-driven frontend.
+Профессиональный, "Pixel-perfect" клон Google Keep, созданный на Django 6 и Tailwind CSS. Этот проект демонстрирует современную "гибридную" веб-архитектуру, сочетающую серверный рендеринг с динамическим фронтендом, управляемым API.
 
-## 🚀 Features
+## 🚀 Возможности
 
-### Core Functionality
-- **Checklists & Todo Mode**: Create dynamic checklists with checkboxes, progress tracking, and strikethrough completion.
-- **Smart Reminders (Audio + Auto-Archive)**: Set reminders that play a sound when due and automatically move the note to the Archive.
-- **Organization**: Pin important notes, Archive old ones, and Move to Trash (Soft Delete).
-- **Color Coding**: Organize notes visually with a palette of 12 colors (Dark Mode compatible).
-- **Live Search**: Real-time filtering of notes by title and content.
+### Основной функционал
+- **Чеклисты и режим задач**: Создание динамических чеклистов с галочками, отслеживанием прогресса и зачеркиванием выполненных пунктов.
+- **Умные напоминания (Аудио + Авто-архивация)**: Установка напоминаний, которые воспроизводят звук при срабатывании и автоматически перемещают заметку в архив.
+- **Организация**: Закрепление важных заметок, архивация старых и перемещение в корзину (мягкое удаление).
+- **Цветовое кодирование**: Визуальная организация заметок с палитрой из 12 цветов (поддержка темной темы).
+- **Живой поиск**: Фильтрация заметок по заголовку и содержимому в реальном времени.
 
-### UI/UX (2025 Standards)
-- **Glassmorphism & Bento Layout**: Modern, grid-based layout using Tailwind CSS.
-- **Optimistic UI**: Instant feedback for actions like Pinning and Checkbox toggling, ensuring the interface feels snappy even on slow networks.
-- **Dark/Light Mode**: Fully supported with persistent preference (localStorage).
-- **Responsive Design**: Collapsible sidebar and mobile-friendly interface.
-- **Micro-interactions**: Hover effects, smooth transitions, and dynamic modals.
+### UI/UX (Стандарты 2025 года)
+- **Глассморфизм и Bento-сетка**: Современный макет на основе сетки с использованием Tailwind CSS.
+- **Оптимистичный UI**: Мгновенная обратная связь для таких действий, как закрепление и переключение чекбоксов, обеспечивающая ощущение быстродействия интерфейса даже при медленном сети.
+- **Темная/Светлая тема**: Полная поддержка с сохранением предпочтений (localStorage).
+- **Адаптивный дизайн**: Сворачиваемая боковая панель и интерфейс, удобный для мобильных устройств.
+- **Микро-взаимодействия**: Эффекты наведения, плавные переходы и динамические модальные окна.
 
-### Technical Excellence
-- **Hybrid Architecture**: Django Templates for SEO/Initial Load + JS/DRF for interactivity.
-- **Security**: User isolation (access only your own notes), CSRF protection, and Environment variables.
-- **Clean Code**: Follows Django best practices and separation of concerns.
+### Техническое совершенство
+- **Гибридная архитектура**: Шаблоны Django для SEO/начальной загрузки + JS/DRF для интерактивности.
+- **Безопасность**: Изоляция пользователей (доступ только к своим заметкам), защита CSRF и переменные окружения.
+- **Чистый код**: Следование лучшим практикам Django и разделение ответственности.
 
-## 🛠 Tech Stack
+## 🛠 Технологический стек
 
-- **Backend**: Python 3.12, Django 6.0, Django REST Framework (DRF).
-- **Frontend**: HTML5, Tailwind CSS (via CDN), Vanilla JavaScript (ES6+).
-- **Database**: SQLite (Development), Extensible to PostgreSQL.
-- **Utilities**: `python-dotenv`, `django-filter`.
+- **Бэкенд**: Python 3.12, Django 6.0, Django REST Framework (DRF).
+- **Фронтенд**: HTML5, Tailwind CSS (через CDN), Vanilla JavaScript (ES6+).
+- **База данных**: SQLite (Разработка), Расширяемая до PostgreSQL.
+- **Утилиты**: `python-dotenv`, `django-filter`.
 
-## 📦 Installation Guide
+## 📦 Руководство по установке
 
-1. **Clone the Repository**
+1. **Клонировать репозиторий**
    ```bash
    git clone https://github.com/yourusername/django-keep-clone.git
    cd django-keep-clone
    ```
 
-2. **Create Virtual Environment**
+2. **Создать виртуальное окружение**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  # На Windows: venv\Scripts\activate
    ```
 
-3. **Install Dependencies**
+3. **Установить зависимости**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Environment Setup**
-   Create a `.env` file in the root directory (copy from `.env.example`):
+4. **Настройка окружения**
+   Создайте файл `.env` в корневой директории (скопируйте из `.env.example`):
    ```env
    SECRET_KEY=your-secret-key
    DEBUG=True
    ```
 
-5. **Apply Migrations**
+5. **Применить миграции**
    ```bash
    python manage.py migrate
    ```
 
-6. **Run Server**
+6. **Запустить сервер**
    ```bash
    python manage.py runserver
    ```
-   Access the app at `http://127.0.0.1:8000`.
+   Откройте приложение по адресу `http://127.0.0.1:8000`.
 
-## 🔌 API Endpoints
+## 🔌 API Эндпоинты
 
-All API endpoints are prefixed with `/api/v1/`. Authentication is required.
+Все API эндпоинты имеют префикс `/api/v1/`. Требуется аутентификация.
 
-| Method | Endpoint | Description |
+| Метод | Эндпоинт | Описание |
 |--------|----------|-------------|
-| GET | `/notes/` | List all active notes (searchable) |
-| POST | `/notes/` | Create a new note |
-| GET | `/notes/{id}/` | Retrieve note details |
-| PATCH | `/notes/{id}/` | Partial update (title, content, color) |
-| DELETE | `/notes/{id}/` | Delete note (Hard delete) |
-| POST | `/notes/{id}/archive/` | Toggle Archive status |
-| POST | `/notes/{id}/trash/` | Toggle Trash status |
-| POST | `/notes/{id}/pin/` | Toggle Pin status |
-| POST | `/notes/empty_trash/` | Permanently delete all trashed notes |
+| GET | `/notes/` | Список всех активных заметок (с поиском) |
+| POST | `/notes/` | Создать новую заметку |
+| GET | `/notes/{id}/` | Получить детали заметки |
+| PATCH | `/notes/{id}/` | Частичное обновление (заголовок, содержимое, цвет) |
+| DELETE | `/notes/{id}/` | Удалить заметку (Полное удаление) |
+| POST | `/notes/{id}/archive/` | Переключить статус архивации |
+| POST | `/notes/{id}/trash/` | Переключить статус корзины |
+| POST | `/notes/{id}/pin/` | Переключить статус закрепления |
+| POST | `/notes/empty_trash/` | Безвозвратно удалить все заметки в корзине |
 
-## 🗄 Database Schema
+## 🗄 Схема базы данных
 
-- **User** (Django Auth): Owns Notes and Labels.
+- **User** (Django Auth): Владеет заметками и метками.
 - **Note**:
-  - `user` (FK): Owner.
-  - `title`, `content`: Text data.
-  - `color`: Visual style.
-  - `is_pinned`, `is_archived`, `is_trashed`: Status flags.
-  - `is_checklist`: Toggle for display mode.
+  - `user` (FK): Владелец.
+  - `title`, `content`: Текстовые данные.
+  - `color`: Визуальный стиль.
+  - `is_pinned`, `is_archived`, `is_trashed`: Флаги статуса.
+  - `is_checklist`: Переключатель режима отображения.
 - **ChecklistItem**:
-  - `note` (FK): Parent note.
-  - `text`, `is_checked`: Item data.
-  - `order`: Sorting order.
+  - `note` (FK): Родительская заметка.
+  - `text`, `is_checked`: Данные пункта.
+  - `order`: Порядок сортировки.
 - **Label**:
-  - `user` (FK): Owner.
-  - `name`: Label text.
-  - `notes` (ManyToMany): Relation to notes.
+  - `user` (FK): Владелец.
+  - `name`: Текст метки.
+  - `notes` (ManyToMany): Связь с заметками.
