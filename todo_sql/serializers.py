@@ -9,7 +9,7 @@ class LabelSerializer(serializers.ModelSerializer):
     def validate_name(self, value):
         user = self.context['request'].user
         if Label.objects.filter(user=user, name=value).exists():
-            raise serializers.ValidationError("Label with this name already exists.")
+            raise serializers.ValidationError("Метка с таким названием уже существует.")
         return value
 
 class ChecklistItemSerializer(serializers.ModelSerializer):
@@ -22,7 +22,7 @@ class ChecklistItemSerializer(serializers.ModelSerializer):
 
     def validate_note(self, value):
         if value and value.user != self.context['request'].user:
-            raise serializers.ValidationError("You cannot add items to another user's note.")
+            raise serializers.ValidationError("Вы не можете добавлять пункты в заметку другого пользователя.")
         return value
 
 class NoteSerializer(serializers.ModelSerializer):
