@@ -89,11 +89,11 @@
              <nav class="space-y-1">
                  <a href="{% url 'index' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'notes' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
                      <span class="material-symbols-outlined {% if active_tab == 'notes' %}fill-1{% endif %}">lightbulb</span>
-                     <span class="sidebar-text font-medium">Notes</span>
+                     <span class="sidebar-text font-medium">Заметки</span>
                  </a>
                  <a href="{% url 'reminders' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'reminders' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
                      <span class="material-symbols-outlined {% if active_tab == 'reminders' %}fill-1{% endif %}">notifications</span>
-                     <span class="sidebar-text font-medium">Reminders</span>
+                     <span class="sidebar-text font-medium">Напоминания</span>
                  </a>
 
                  <div id="sidebar-labels-container">
@@ -107,15 +107,15 @@
 
                  <button class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark w-full text-left" onclick="openLabelModal()">
                      <span class="material-symbols-outlined">edit</span>
-                     <span class="sidebar-text font-medium">Edit labels</span>
+                     <span class="sidebar-text font-medium">Изменить ярлыки</span>
                  </button>
                  <a href="{% url 'archive' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'archive' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
                      <span class="material-symbols-outlined {% if active_tab == 'archive' %}fill-1{% endif %}">archive</span>
-                     <span class="sidebar-text font-medium">Archive</span>
+                     <span class="sidebar-text font-medium">Архив</span>
                  </a>
                  <a href="{% url 'trash' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'trash' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
                      <span class="material-symbols-outlined {% if active_tab == 'trash' %}fill-1{% endif %}">delete</span>
-                     <span class="sidebar-text font-medium">Trash</span>
+                     <span class="sidebar-text font-medium">Корзина</span>
                  </a>
              </nav>
         </div>
@@ -132,7 +132,7 @@
                 </button>
                 <div class="flex items-center gap-2">
                     <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
-                    <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Notes</span>
+                    <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
                 </div>
             </div>
 
@@ -143,7 +143,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span class="material-symbols-outlined text-gray-500">search</span>
                     </div>
-                    <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500" placeholder="Search">
+                    <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500" placeholder="Поиск">
                  </div>
                  {% endblock %}
             </div>
@@ -165,7 +165,7 @@
                      <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block hover:block z-50">
                         <form action="{% url 'logout' %}" method="post">
                             {% csrf_token %}
-                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Sign out</button>
+                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Выйти</button>
                         </form>
                      </div>
                 </div>
@@ -182,13 +182,13 @@
     <!-- Label Modal -->
     <div id="label-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center" onclick="closeLabelModal(event)">
         <div class="bg-white dark:bg-keep-bg-dark rounded-lg shadow-xl w-80 p-4" onclick="event.stopPropagation()">
-            <h3 class="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">Edit labels</h3>
+            <h3 class="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">Изменить ярлыки</h3>
 
             <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
                 <button class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200" onclick="createLabel()">
                     <span class="material-symbols-outlined">add</span>
                 </button>
-                <input type="text" id="new-label-input" placeholder="Create new label" class="flex-1 bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-500" onkeydown="if(event.key==='Enter') createLabel()">
+                <input type="text" id="new-label-input" placeholder="Создать ярлык" class="flex-1 bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-500" onkeydown="if(event.key==='Enter') createLabel()">
                 <button class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200" onclick="document.getElementById('new-label-input').value=''">
                     <span class="material-symbols-outlined text-[18px]">close</span>
                 </button>
@@ -209,7 +209,7 @@
             </div>
 
             <div class="flex justify-end mt-4">
-                <button class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleLabelModalDone()">Done</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleLabelModalDone()">Готово</button>
             </div>
         </div>
     </div>

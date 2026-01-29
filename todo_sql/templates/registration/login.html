@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Notes</title>
+    <title>Вход - Заметки</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,34 +29,34 @@
 </head>
 <body class="bg-gray-100 dark:bg-keep-bg-dark flex items-center justify-center h-screen transition-colors">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Login</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Вход</h2>
         <form method="post" class="space-y-4">
             {% csrf_token %}
             {% if form.errors %}
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    <p class="font-bold">Error!</p>
-                    <span class="block sm:inline">Please check your username and password.</span>
+                    <p class="font-bold">Ошибка!</p>
+                    <span class="block sm:inline">Пожалуйста, проверьте имя пользователя и пароль.</span>
                 </div>
             {% endif %}
 
             <div>
-                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="id_username">Username</label>
+                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="id_username">Имя пользователя</label>
                 <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
                        id="id_username" name="username" type="text" required value="{{ form.username.value|default:'' }}">
             </div>
 
             <div>
-                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="id_password">Password</label>
+                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="id_password">Пароль</label>
                 <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
                        id="id_password" name="password" type="password" required>
             </div>
 
             <button class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                Sign In
+                Войти
             </button>
         </form>
         <p class="mt-4 text-center text-gray-600 dark:text-gray-400 text-sm">
-            Don't have an account? <a href="{% url 'register' %}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">Register</a>
+            Нет аккаунта? <a href="{% url 'register' %}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400">Зарегистрироваться</a>
         </p>
     </div>
 </body>

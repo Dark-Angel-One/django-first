@@ -41,7 +41,7 @@ class NoteListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Notes'
+        context['page_title'] = 'Заметки'
         context['active_tab'] = 'notes'
         return context
 
@@ -55,7 +55,7 @@ class ArchiveView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Archive'
+        context['page_title'] = 'Архив'
         context['active_tab'] = 'archive'
         return context
 
@@ -69,7 +69,7 @@ class TrashView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Trash'
+        context['page_title'] = 'Корзина'
         context['active_tab'] = 'trash'
         return context
 
@@ -88,7 +88,7 @@ class RemindersView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Reminders'
+        context['page_title'] = 'Напоминания'
         context['active_tab'] = 'reminders'
         return context
 

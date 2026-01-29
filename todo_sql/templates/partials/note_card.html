@@ -27,7 +27,7 @@
                     </li>
                 {% endfor %}
                 {% if note.checklist_items.count > 5 %}
-                    <li class="text-xs text-gray-500 pl-7">+ {{ note.checklist_items.count|add:"-5" }} more items</li>
+                    <li class="text-xs text-gray-500 pl-7">+ еще {{ note.checklist_items.count|add:"-5" }}</li>
                 {% endif %}
             </ul>
         {% else %}
@@ -56,23 +56,23 @@
     <div class="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8">
         <div class="flex gap-1">
             {% if note.is_trashed %}
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Delete Forever" onclick="event.stopPropagation(); deleteNoteForever({{ note.id }})">
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Удалить навсегда" onclick="event.stopPropagation(); deleteNoteForever({{ note.id }})">
                     <span class="material-symbols-outlined text-[18px]">delete_forever</span>
                 </button>
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Restore" onclick="event.stopPropagation(); trashNote({{ note.id }})">
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Восстановить" onclick="event.stopPropagation(); trashNote({{ note.id }})">
                     <span class="material-symbols-outlined text-[18px]">restore_from_trash</span>
                 </button>
             {% else %}
                 {% if note.is_archived %}
-                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Unarchive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Разархивировать" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
                         <span class="material-symbols-outlined text-[18px]">unarchive</span>
                     </button>
                 {% else %}
-                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
+                    <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="В архив" onclick="event.stopPropagation(); archiveNote({{ note.id }})">
                         <span class="material-symbols-outlined text-[18px]">archive</span>
                     </button>
                 {% endif %}
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote({{ note.id }})">
+                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Удалить" onclick="event.stopPropagation(); trashNote({{ note.id }})">
                     <span class="material-symbols-outlined text-[18px]">delete</span>
                 </button>
             {% endif %}
