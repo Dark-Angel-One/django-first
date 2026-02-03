@@ -394,11 +394,24 @@ function createNoteCardHTML(note) {
         contentHtml = p.outerHTML;
     }
 
+    let reminderHtml = '';
+    if (note.reminder_date) {
+         const dateObj = new Date(note.reminder_date);
+         const dateStr = dateObj.toLocaleString('ru-RU', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+         reminderHtml = `
+        <div class="mt-2">
+             <span class="reminder-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
+                <span class="material-symbols-outlined text-[14px] mr-1">schedule</span>
+                ${dateStr}
+             </span>
+        </div>`;
+    }
+
     let labelsHtml = '';
     if (note.labels && note.labels.length > 0) {
         labelsHtml = '<div class="flex flex-wrap gap-1 mt-2">';
         note.labels.forEach(l => {
-            labelsHtml += `<span class="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs text-gray-700 dark:text-gray-300 cursor-pointer" onclick="event.stopPropagation(); window.location.href='/label/${l.name}/'">${l.name}</span>`;
+            labelsHtml += `<span class="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs text-gray-700 dark:text-gray-300 cursor-pointer" onclick="event.stopPropagation(); window.location.href='/label/${encodeURIComponent(l.name)}/'">${escapeHtml(l.name)}</span>`;
         });
         labelsHtml += '</div>';
     }
@@ -413,6 +426,7 @@ function createNoteCardHTML(note) {
         <div onclick="openEditModal(${note.id})" class="cursor-pointer flex-1">
             ${note.title ? `<h3 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6">${escapeHtml(note.title)}</h3>` : ''}
             ${contentHtml}
+            ${reminderHtml}
             ${labelsHtml}
         </div>
         <div class="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8">
@@ -612,34 +626,43 @@ function renderPagination(data) {
     // Helper for button/span
     const createBtn = (isNext, url, disabled) => {
         if (disabled) {
-            return `
-                <span class="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed">
-                    <span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>
-                </span>
-            `;
+            const span = document.createElement('span');
+            span.className = "p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed";
+            span.innerHTML = `<span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>`;
+            return span;
         } else {
-            // We use onclick
-            return `
-                <a href="${url}" onclick="event.preventDefault(); loadNotes('${url}')" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="${isNext ? 'Next' : 'Previous'}">
-                    <span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>
-                </a>
-            `;
+            const a = document.createElement('a');
+            a.href = url;
+            a.className = "p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors";
+            a.setAttribute('aria-label', isNext ? 'Next' : 'Previous');
+            a.innerHTML = `<span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>`;
+            a.onclick = (e) => {
+                e.preventDefault();
+                loadNotes(url);
+            };
+            return a;
         }
     };
 
-    const html = `
-        <div class="flex justify-center mt-8 pb-4">
-            <nav class="inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg">
-                ${createBtn(false, data.previous, prevDisabled)}
-                <span class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Страница ${currentPage} из ${totalPages}
-                </span>
-                ${createBtn(true, data.next, nextDisabled)}
-            </nav>
-        </div>
-    `;
+    // Build container safely
+    container.innerHTML = ''; // clear old
+    const wrapper = document.createElement('div');
+    wrapper.className = "flex justify-center mt-8 pb-4";
 
-    container.innerHTML = html;
+    const nav = document.createElement('nav');
+    nav.className = "inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg";
+
+    nav.appendChild(createBtn(false, data.previous, prevDisabled));
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = "px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200";
+    pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+    nav.appendChild(pageInfo);
+
+    nav.appendChild(createBtn(true, data.next, nextDisabled));
+
+    wrapper.appendChild(nav);
+    container.appendChild(wrapper);
 }
 
 // --- Edit Modal ---
@@ -1007,9 +1030,26 @@ function checkReminders() {
         if (!reminderStr) return;
 
         const reminderDate = new Date(reminderStr);
-        // Check if valid date and past/now (and not checked recently? - no, we archive it, so it's fine)
-        if (!isNaN(reminderDate.getTime()) && reminderDate <= now) {
-            triggerReminder(card);
+        if (isNaN(reminderDate.getTime())) return;
+
+        if (reminderDate <= now) {
+            const timeDiff = now - reminderDate;
+            const oneHour = 3600000; // 1 hour in ms
+
+            if (timeDiff > oneHour) {
+                // Expired long ago (> 1h). Show visually as expired, do NOT archive/sound.
+                // Try to find the badge. Server-rendered or JS-rendered.
+                const badge = card.querySelector('.mt-2 span.inline-flex');
+                if (badge) {
+                    // Remove neutral colors
+                    badge.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200', 'border-gray-300', 'dark:border-gray-500');
+                    // Add danger colors
+                    badge.classList.add('bg-red-100', 'dark:bg-red-900', 'text-red-800', 'dark:text-red-200', 'border-red-300', 'dark:border-red-700');
+                }
+            } else {
+                // Recently expired (<= 1h). Trigger active reminder.
+                triggerReminder(card);
+            }
         }
     });
 }
@@ -1050,7 +1090,17 @@ async function triggerReminder(card) {
 function showToast(message) {
     const div = document.createElement('div');
     div.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl z-50 transition-opacity duration-500 flex items-center gap-2';
-    div.innerHTML = `<span class="material-symbols-outlined">notifications_active</span><span>${message}</span>`;
+
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined';
+    icon.textContent = 'notifications_active';
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    div.appendChild(icon);
+    div.appendChild(text);
+
     document.body.appendChild(div);
     setTimeout(() => {
         div.style.opacity = '0';
