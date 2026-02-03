@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,11 +30,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 if not SECRET_KEY:
-    if DEBUG:
-        SECRET_KEY = 'django-insecure-default-key'
-    else:
-        from django.core.exceptions import ImproperlyConfigured
-        raise ImproperlyConfigured("SECRET_KEY must be set in production")
+    raise ImproperlyConfigured("SECRET_KEY must be set in .env")
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
 
