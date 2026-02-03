@@ -78,6 +78,7 @@
     <div style="display:none;">{% csrf_token %}</div>
 
     <!-- Sidebar -->
+    {% if request.user.is_authenticated %}
     <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex">
         <!-- Sidebar Content -->
         <div class="px-3">
@@ -120,6 +121,7 @@
              </nav>
         </div>
     </aside>
+    {% endif %}
 
     <!-- Main Content Wrapper -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
@@ -127,9 +129,11 @@
         <!-- Topbar -->
         <header class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 bg-keep-bg dark:bg-keep-bg-dark">
             <div class="flex items-center gap-4">
+                {% if request.user.is_authenticated %}
                 <button id="menu-btn" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
+                {% endif %}
                 <div class="flex items-center gap-2">
                     <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
                     <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
@@ -138,6 +142,7 @@
 
             <!-- Search Bar -->
             <div class="flex-1 max-w-2xl mx-4 hidden md:block">
+                 {% if request.user.is_authenticated %}
                  {% block search_bar %}
                  <div class="relative group">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -146,6 +151,7 @@
                     <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500" placeholder="Поиск">
                  </div>
                  {% endblock %}
+                 {% endif %}
             </div>
 
             <!-- Right Actions -->
@@ -154,6 +160,7 @@
                     <span class="material-symbols-outlined">dark_mode</span>
                 </button>
 
+                {% if request.user.is_authenticated %}
                 <div class="relative ml-2 group">
                     <button class="flex items-center gap-2 hover:bg-keep-hover dark:hover:bg-keep-hover-dark p-1 rounded-full px-3 py-1">
                          <span class="text-sm font-medium">{{ request.user.username }}</span>
@@ -169,6 +176,7 @@
                         </form>
                      </div>
                 </div>
+                {% endif %}
             </div>
         </header>
 
@@ -431,28 +439,30 @@
         const sidebar = document.getElementById('sidebar');
         const sidebarTexts = document.querySelectorAll('.sidebar-text');
 
-        menuBtn.addEventListener('click', () => {
-            if (window.innerWidth >= 768) {
-                // Desktop
-                const isExpanded = sidebar.classList.contains('sidebar-expanded');
-                if (isExpanded) {
-                    sidebar.classList.remove('sidebar-expanded');
-                    sidebar.classList.add('sidebar-collapsed');
-                    sidebarTexts.forEach(t => t.style.display = 'none');
+        if (menuBtn && sidebar) {
+            menuBtn.addEventListener('click', () => {
+                if (window.innerWidth >= 768) {
+                    // Desktop
+                    const isExpanded = sidebar.classList.contains('sidebar-expanded');
+                    if (isExpanded) {
+                        sidebar.classList.remove('sidebar-expanded');
+                        sidebar.classList.add('sidebar-collapsed');
+                        sidebarTexts.forEach(t => t.style.display = 'none');
+                    } else {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        sidebar.classList.add('sidebar-expanded');
+                        sidebarTexts.forEach(t => t.style.display = 'inline');
+                    }
                 } else {
-                    sidebar.classList.remove('sidebar-collapsed');
-                    sidebar.classList.add('sidebar-expanded');
-                    sidebarTexts.forEach(t => t.style.display = 'inline');
+                    // Mobile
+                    sidebar.classList.toggle('hidden');
+                    sidebar.classList.toggle('absolute');
+                    sidebar.classList.toggle('z-50');
+                    sidebar.classList.toggle('bg-white');
+                    sidebar.classList.toggle('h-full');
                 }
-            } else {
-                // Mobile
-                sidebar.classList.toggle('hidden');
-                sidebar.classList.toggle('absolute');
-                sidebar.classList.toggle('z-50');
-                sidebar.classList.toggle('bg-white');
-                sidebar.classList.toggle('h-full');
-            }
-        });
+            });
+        }
 
     </script>
     {% block scripts %}
