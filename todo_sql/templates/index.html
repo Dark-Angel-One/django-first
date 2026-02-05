@@ -199,6 +199,8 @@
         {id: {{ label.id }}, name: "{{ label.name|escapejs }}"},
         {% endfor %}
     ];
+    window.activeTab = "{{ active_tab|default:'notes' }}";
+    window.activeLabel = "{{ active_label|default:''|escapejs }}";
     window.staticAudioUrl = "{% static 'audio/pop.mp3' %}";
 </script>
 <script src="{% static 'js/app.js' %}"></script>
