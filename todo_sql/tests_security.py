@@ -12,6 +12,8 @@ class SecurityTests(TestCase):
         self.client.force_authenticate(user=self.user1)
         self.note1 = Note.objects.create(user=self.user1, title="Note 1")
         self.note2 = Note.objects.create(user=self.user2, title="Note 2")
+        self.label2 = Label.objects.create(user=self.user2, name="Label 2")
+        self.checklist_item2 = ChecklistItem.objects.create(note=self.note2, text="Item 2")
 
     def test_idor_checklist_item_creation(self):
         """Cannot add checklist item to another user's note"""
@@ -78,3 +80,47 @@ class SecurityTests(TestCase):
         item3 = next(i for i in new_items if i['text'] == 'Item 3')
         self.assertNotEqual(item3['id'], id1)
         self.assertNotEqual(item3['id'], id2)
+
+    def test_idor_note_access(self):
+        """User A cannot access User B's note"""
+        # GET detail
+        response = self.client.get(f'/api/v1/notes/{self.note2.id}/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # PUT update
+        response = self.client.put(f'/api/v1/notes/{self.note2.id}/', {'title': 'Hacked'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # DELETE
+        response = self.client.delete(f'/api/v1/notes/{self.note2.id}/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Actions (archive)
+        response = self.client.post(f'/api/v1/notes/{self.note2.id}/archive/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_idor_label_modification(self):
+        """User A cannot modify User B's label"""
+        response = self.client.patch(f'/api/v1/labels/{self.label2.id}/', {'name': 'Hacked Label'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = self.client.delete(f'/api/v1/labels/{self.label2.id}/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_idor_checklist_item_modification(self):
+        """User A cannot modify User B's checklist item"""
+        response = self.client.patch(f'/api/v1/checklist-items/{self.checklist_item2.id}/', {'text': 'Hacked Item'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_xss_protection_in_api(self):
+        """API should accept XSS payloads but they must be sanitized on frontend"""
+        payload = "<script>alert(1)</script>"
+        data = {'title': payload, 'content': payload}
+        response = self.client.post('/api/v1/notes/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['title'], payload)
+
+        # We rely on frontend to escape this.
+        # But we verify here that backend stores it exactly as is (no double escaping or magic removal unless configured)
+        note = Note.objects.get(id=response.data['id'])
+        self.assertEqual(note.title, payload)
