@@ -1,5 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from rest_framework.test import APIClient
+from rest_framework import status
 from .models import Note, ChecklistItem
 from .serializers import NoteSerializer
 
@@ -18,24 +20,8 @@ class ChecklistSerializerTest(TestCase):
             ],
             'color': 'white'
         }
-
-        # Serializer needs context with request or user?
-        # NoteSerializer uses HiddenField? No.
-        # But Note model has user field.
-        # The view usually handles injecting user.
-        # Let's test the serializer directly but we need to pass user?
-        # NoteSerializer definition:
-        # user = models.ForeignKey(User, ...)
-        # The serializer doesn't seem to have user in fields list or read_only_fields?
-        # Wait, let's check serializer again.
-
-        # It has: fields = ['id', 'title', 'content', ..., 'created_at', 'updated_at']
-        # It does NOT have 'user' in fields.
-        # So perform_create in ViewSet likely handles it: serializer.save(user=self.request.user)
-
         serializer = NoteSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
-
         note = serializer.save(user=self.user)
 
         self.assertEqual(note.title, 'Shopping List')
@@ -47,3 +33,34 @@ class ChecklistSerializerTest(TestCase):
         self.assertFalse(items[0].is_checked)
         self.assertEqual(items[1].text, 'Eggs')
         self.assertTrue(items[1].is_checked)
+
+class ChecklistItemViewSetTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='apiuser', password='password')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.note = Note.objects.create(user=self.user, title="My List", is_checklist=True)
+        self.item = ChecklistItem.objects.create(note=self.note, text="Item 1", order=0)
+
+    def test_update_item_status(self):
+        response = self.client.patch(f'/api/v1/checklist-items/{self.item.id}/', {'is_checked': True})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.item.refresh_from_db()
+        self.assertTrue(self.item.is_checked)
+
+    def test_update_item_text(self):
+        response = self.client.patch(f'/api/v1/checklist-items/{self.item.id}/', {'text': 'Updated Item'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.text, 'Updated Item')
+
+    def test_delete_item(self):
+        response = self.client.delete(f'/api/v1/checklist-items/{self.item.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ChecklistItem.objects.filter(id=self.item.id).exists())
+
+    def test_create_item(self):
+        data = {'note': self.note.id, 'text': 'New Item', 'order': 1}
+        response = self.client.post('/api/v1/checklist-items/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(ChecklistItem.objects.filter(text='New Item', note=self.note).exists())
