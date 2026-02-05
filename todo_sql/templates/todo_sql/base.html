@@ -33,9 +33,12 @@
 <body class="bg-keep-bg dark:bg-keep-bg-dark text-gray-800 dark:text-gray-200 min-h-screen flex overflow-hidden transition-colors duration-200">
     <div style="display:none;">{% csrf_token %}</div>
 
+    <!-- Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="closeSidebarMobile()"></div>
+
     <!-- Sidebar -->
     {% if request.user.is_authenticated %}
-    <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex">
+    <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex transition-all">
         <!-- Sidebar Content -->
         <div class="px-3">
              <div class="flex items-center gap-4 pl-3 py-3 mb-2">
@@ -400,6 +403,15 @@
         const menuBtn = document.getElementById('menu-btn');
         const sidebar = document.getElementById('sidebar');
         const sidebarTexts = document.querySelectorAll('.sidebar-text');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+        function closeSidebarMobile() {
+             if (window.innerWidth < 768) {
+                 sidebar.classList.add('hidden');
+                 sidebar.classList.remove('absolute', 'z-50', 'h-full', 'shadow-2xl');
+                 sidebarBackdrop.classList.add('hidden');
+             }
+        }
 
         if (menuBtn && sidebar) {
             menuBtn.addEventListener('click', () => {
@@ -417,11 +429,14 @@
                     }
                 } else {
                     // Mobile
-                    sidebar.classList.toggle('hidden');
-                    sidebar.classList.toggle('absolute');
-                    sidebar.classList.toggle('z-50');
-                    sidebar.classList.toggle('bg-white');
-                    sidebar.classList.toggle('h-full');
+                    const isHidden = sidebar.classList.contains('hidden');
+                    if (isHidden) {
+                        sidebar.classList.remove('hidden');
+                        sidebar.classList.add('absolute', 'z-50', 'h-full', 'shadow-2xl');
+                        sidebarBackdrop.classList.remove('hidden');
+                    } else {
+                        closeSidebarMobile();
+                    }
                 }
             });
         }
