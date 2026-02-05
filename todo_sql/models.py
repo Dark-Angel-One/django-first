@@ -46,6 +46,10 @@ class Note(models.Model):
     def __str__(self):
         return self.title if self.title else (self.content[:20] if self.content else "Note")
 
+    @property
+    def preview_checklist_items(self):
+        return list(self.checklist_items.all())[:5]
+
     class Meta:
         verbose_name = 'Заметка'
         verbose_name_plural = 'Заметки'

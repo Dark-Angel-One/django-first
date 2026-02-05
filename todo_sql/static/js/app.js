@@ -321,10 +321,7 @@ async function saveNote(data) {
 // --- Grid Rendering ---
 
 function prependNoteToGrid(note) {
-    const html = createNoteCardHTML(note);
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const noteNode = temp.firstElementChild;
+    const noteNode = createNoteCardHTML(note);
 
     if (note.is_pinned) {
         pinnedGrid.prepend(noteNode);
@@ -334,6 +331,7 @@ function prependNoteToGrid(note) {
     updateSectionTitles();
 }
 
+// Kept for backward compatibility if needed, though simpler now.
 function escapeHtml(text) {
     if (!text) return text;
     return text
@@ -345,7 +343,13 @@ function escapeHtml(text) {
 }
 
 function createNoteCardHTML(note) {
-    // Must match note_card.html logic.
+    // Helper to create element with classes
+    const el = (tag, classes = '') => {
+        const e = document.createElement(tag);
+        if(classes) e.className = classes;
+        return e;
+    };
+
     const colorClassMap = {
         'white': 'bg-white dark:bg-keep-bg-dark', 'red': 'bg-red-100 dark:bg-red-900', 'orange': 'bg-orange-100 dark:bg-orange-900',
         'yellow': 'bg-yellow-100 dark:bg-yellow-900', 'green': 'bg-green-100 dark:bg-green-900', 'teal': 'bg-teal-100 dark:bg-teal-900',
@@ -354,93 +358,121 @@ function createNoteCardHTML(note) {
     };
     const bgClass = colorClassMap[note.color] || colorClassMap['white'];
 
-    let contentHtml = '';
+    const card = el('div', `note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}`);
+    card.dataset.id = note.id;
+    card.dataset.pinned = note.is_pinned;
+    if (note.reminder_date) card.dataset.reminder = note.reminder_date;
+
+    // Pin Button (Absolute)
+    const pinContainer = el('div', `absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-20`);
+    const pinBtn = el('button', 'p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300');
+    pinBtn.onclick = (e) => { e.stopPropagation(); togglePinNote(note.id); };
+    const pinIcon = el('span', `material-symbols-outlined text-[20px] ${note.is_pinned ? 'fill-1' : ''}`);
+    pinIcon.textContent = 'keep';
+    pinBtn.appendChild(pinIcon);
+    pinContainer.appendChild(pinBtn);
+    card.appendChild(pinContainer);
+
+    // Main Content (Clickable)
+    const contentDiv = el('div', 'cursor-pointer flex-1');
+    contentDiv.onclick = () => openEditModal(note.id);
+
+    // Title
+    if (note.title) {
+        const h3 = el('h3', 'font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6');
+        h3.textContent = note.title; // Safe XSS
+        contentDiv.appendChild(h3);
+    }
+
+    // Body
     if (note.is_checklist) {
-        // Build checklist safely
-        const ul = document.createElement('ul');
-        ul.className = 'space-y-1';
-
+        const ul = el('ul', 'space-y-1');
         note.checklist_items.slice(0, 5).forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200';
+            const li = el('li', 'flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200');
 
-            const spanIcon = document.createElement('span');
-            spanIcon.className = 'material-symbols-outlined text-[18px] text-gray-400 cursor-pointer';
-            spanIcon.onclick = function(e) { e.stopPropagation(); toggleCheckbox(item.id, this); };
+            const spanIcon = el('span', 'material-symbols-outlined text-[18px] text-gray-400 cursor-pointer');
+            spanIcon.onclick = (e) => { e.stopPropagation(); toggleCheckbox(item.id, spanIcon); };
             spanIcon.textContent = item.is_checked ? 'check_box' : 'check_box_outline_blank';
 
-            const spanText = document.createElement('span');
-            spanText.className = item.is_checked ? 'line-through text-gray-500 break-all' : 'break-all';
-            spanText.textContent = item.text;
+            const spanText = el('span', item.is_checked ? 'line-through text-gray-500 break-all' : 'break-all');
+            spanText.textContent = item.text; // Safe XSS
 
             li.appendChild(spanIcon);
             li.appendChild(spanText);
             ul.appendChild(li);
         });
-
         if (note.checklist_items.length > 5) {
-            const liMore = document.createElement('li');
-            liMore.className = 'text-xs text-gray-500 pl-7';
-            // Translated
+            const liMore = el('li', 'text-xs text-gray-500 pl-7');
             liMore.textContent = `+ ещё ${note.checklist_items.length - 5}`;
             ul.appendChild(liMore);
         }
-        contentHtml = ul.outerHTML;
+        contentDiv.appendChild(ul);
     } else {
-        // Build text content safely
-        const p = document.createElement('p');
-        p.className = 'text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden';
-        p.textContent = note.content.substring(0, 300);
-        contentHtml = p.outerHTML;
+        const p = el('p', 'text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden');
+        p.textContent = note.content.substring(0, 300); // Safe XSS
+        contentDiv.appendChild(p);
     }
 
-    let reminderHtml = '';
+    // Reminder
     if (note.reminder_date) {
-         const dateObj = new Date(note.reminder_date);
-         const dateStr = dateObj.toLocaleString('ru-RU', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
-         reminderHtml = `
-        <div class="mt-2">
-             <span class="reminder-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
-                <span class="material-symbols-outlined text-[14px] mr-1">schedule</span>
-                ${dateStr}
-             </span>
-        </div>`;
+         const div = el('div', 'mt-2');
+         const badge = el('span', 'reminder-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-500');
+         const icon = el('span', 'material-symbols-outlined text-[14px] mr-1');
+         icon.textContent = 'schedule';
+         badge.appendChild(icon);
+         const dateText = document.createTextNode(" " + (note.formatted_reminder_date || note.reminder_date));
+         badge.appendChild(dateText);
+         div.appendChild(badge);
+         contentDiv.appendChild(div);
     }
 
-    let labelsHtml = '';
+    // Labels
     if (note.labels && note.labels.length > 0) {
-        labelsHtml = '<div class="flex flex-wrap gap-1 mt-2">';
+        const labelsDiv = el('div', 'flex flex-wrap gap-1 mt-2');
         note.labels.forEach(l => {
-            labelsHtml += `<span class="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs text-gray-700 dark:text-gray-300 cursor-pointer" onclick="event.stopPropagation(); window.location.href='/label/${encodeURIComponent(l.name)}/'">${escapeHtml(l.name)}</span>`;
+            const span = el('span', 'px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs text-gray-700 dark:text-gray-300 cursor-pointer');
+            span.onclick = (e) => {
+                 e.stopPropagation();
+                 window.location.href=`/label/${encodeURIComponent(l.name)}/`;
+            };
+            span.textContent = l.name; // Safe XSS
+            labelsDiv.appendChild(span);
         });
-        labelsHtml += '</div>';
+        contentDiv.appendChild(labelsDiv);
     }
 
-    return `
-    <div class="note-card relative group rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-all hover:shadow-md cursor-default flex flex-col justify-between ${bgClass}" data-id="${note.id}" data-pinned="${note.is_pinned}" data-reminder="${note.reminder_date || ''}">
-        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 ${note.is_pinned ? 'opacity-100' : ''} transition-opacity z-20">
-            <button onclick="event.stopPropagation(); togglePinNote(${note.id})" class="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300">
-                <span class="material-symbols-outlined text-[20px] ${note.is_pinned ? 'fill-1' : ''}">keep</span>
-            </button>
-        </div>
-        <div onclick="openEditModal(${note.id})" class="cursor-pointer flex-1">
-            ${note.title ? `<h3 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100 break-words pr-6">${escapeHtml(note.title)}</h3>` : ''}
-            ${contentHtml}
-            ${reminderHtml}
-            ${labelsHtml}
-        </div>
-        <div class="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8">
-            <div class="flex gap-1">
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Archive" onclick="event.stopPropagation(); archiveNote(${note.id})">
-                    <span class="material-symbols-outlined text-[18px]">archive</span>
-                </button>
-                <button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300" title="Trash" onclick="event.stopPropagation(); trashNote(${note.id})">
-                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    `;
+    card.appendChild(contentDiv);
+
+    // Hover Actions
+    const actionsDiv = el('div', 'flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity h-8');
+    const btnGroup = el('div', 'flex gap-1');
+
+    const createActionBtn = (iconName, title, onClick) => {
+        const btn = el('button', 'p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300');
+        btn.title = title;
+        btn.onclick = (e) => { e.stopPropagation(); onClick(note.id); };
+        const icon = el('span', 'material-symbols-outlined text-[18px]');
+        icon.textContent = iconName;
+        btn.appendChild(icon);
+        return btn;
+    };
+
+    if (note.is_trashed) {
+        btnGroup.appendChild(createActionBtn('delete_forever', 'Удалить навсегда', deleteNoteForever));
+        btnGroup.appendChild(createActionBtn('restore_from_trash', 'Восстановить', trashNote));
+    } else {
+        if (note.is_archived) {
+             btnGroup.appendChild(createActionBtn('unarchive', 'Разархивировать', archiveNote));
+        } else {
+             btnGroup.appendChild(createActionBtn('archive', 'В архив', archiveNote));
+        }
+        btnGroup.appendChild(createActionBtn('delete', 'Удалить', trashNote));
+    }
+
+    actionsDiv.appendChild(btnGroup);
+    card.appendChild(actionsDiv);
+
+    return card;
 }
 
 // --- Actions ---
@@ -562,7 +594,25 @@ async function loadNotes(urlOrQuery) {
     if (urlOrQuery && (urlOrQuery.startsWith('/') || urlOrQuery.startsWith('http'))) {
         url = urlOrQuery;
     } else {
-        url = urlOrQuery ? `/api/v1/notes/?search=${urlOrQuery}` : '/api/v1/notes/';
+        url = urlOrQuery ? `/api/v1/notes/?search=${encodeURIComponent(urlOrQuery)}` : '/api/v1/notes/';
+    }
+
+    // Append Filters based on Active Tab to ensure sync with Backend View logic
+    const separator = url.includes('?') ? '&' : '?';
+    if (window.activeTab === 'archive') {
+        url += `${separator}is_archived=true`;
+    } else if (window.activeTab === 'trash') {
+        url += `${separator}is_trashed=true`;
+    } else if (window.activeTab === 'notes') {
+        url += `${separator}is_archived=false&is_trashed=false`;
+    } else if (window.activeTab === 'label' && window.activeLabel) {
+        // Find label ID from window.userLabels
+        if (window.userLabels) {
+            const labelObj = window.userLabels.find(l => l.name === window.activeLabel);
+            if (labelObj) {
+                url += `${separator}labels=${labelObj.id}&is_archived=false&is_trashed=false`;
+            }
+        }
     }
 
     try {

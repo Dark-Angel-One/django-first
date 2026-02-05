@@ -232,6 +232,12 @@
                 const label = await res.json();
                 addLabelToModalList(label);
                 addLabelToSidebar(label);
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('Ошибка создания ярлыка');
+                } else {
+                    alert('Ошибка создания ярлыка');
+                }
             }
         }
 

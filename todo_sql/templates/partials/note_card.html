@@ -18,7 +18,7 @@
 
         {% if note.is_checklist %}
             <ul class="space-y-1">
-                {% for item in note.checklist_items.all|slice:":5" %}
+                {% for item in note.preview_checklist_items %}
                     <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
                         <span class="material-symbols-outlined text-[18px] text-gray-400 cursor-pointer" onclick="event.stopPropagation(); toggleCheckbox({{ item.id }}, this)">
                             {% if item.is_checked %}check_box{% else %}check_box_outline_blank{% endif %}

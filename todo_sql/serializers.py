@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import formats
 from .models import Note, Label, ChecklistItem
 
 class LabelSerializer(serializers.ModelSerializer):
@@ -32,6 +33,7 @@ class NoteSerializer(serializers.ModelSerializer):
         many=True, queryset=Label.objects.all(), write_only=True, source='labels', required=False
     )
     reminder_date = serializers.DateTimeField(required=False, allow_null=True, input_formats=['%Y-%m-%dT%H:%M', 'iso-8601'])
+    formatted_reminder_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Note
@@ -39,9 +41,14 @@ class NoteSerializer(serializers.ModelSerializer):
             'id', 'title', 'content', 'color', 'is_pinned',
             'is_archived', 'is_trashed', 'is_checklist',
             'labels', 'label_ids', 'checklist_items', 'reminder_date',
-            'created_at', 'updated_at'
+            'formatted_reminder_date', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'formatted_reminder_date']
+
+    def get_formatted_reminder_date(self, obj):
+        if obj.reminder_date:
+            return formats.date_format(obj.reminder_date, "M j, H:i")
+        return None
 
     def create(self, validated_data):
         checklist_items_data = validated_data.pop('checklist_items', [])
