@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academy Notes</title>
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#ffffff">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -115,6 +117,10 @@
 
             <!-- Right Actions -->
             <div class="flex items-center gap-2">
+
+                <button id="view-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark hidden sm:block" title="Вид">
+                    <span class="material-symbols-outlined">view_list</span>
+                </button>
                 <button id="theme-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark" title="Toggle Dark Mode">
                     <span class="material-symbols-outlined">dark_mode</span>
                 </button>
@@ -444,5 +450,17 @@
     </script>
     {% block scripts %}
     {% endblock %}
-</body>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register("{% static 'sw.js' %}").then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+    </body>
 </html>
