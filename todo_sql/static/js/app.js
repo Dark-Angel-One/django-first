@@ -408,8 +408,8 @@ function createNoteCardHTML(note) {
         }
         contentDiv.appendChild(ul);
     } else {
-        const p = el('p', 'text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words max-h-60 overflow-hidden');
-        p.textContent = note.content.substring(0, 300); // Safe XSS
+        const p = el('div', 'text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words line-clamp-8 overflow-hidden max-h-60 relative');
+        p.textContent = note.content.substring(0, 500); // Safe XSS
         contentDiv.appendChild(p);
     }
 
@@ -813,7 +813,7 @@ async function openEditModal(id) {
     labelBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(labelBtn); };
     labelBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">label</span>';
 
-    const labelMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto');
+    const labelMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-60 overflow-y-auto');
     labelMenu.onclick = (e) => e.stopPropagation();
 
     // Use window.userLabels
