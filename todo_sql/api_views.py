@@ -121,6 +121,7 @@ class NoteViewSet(viewsets.ModelViewSet):
         return Response({'status': 'порядок обновлен'})
 
 class LabelViewSet(viewsets.ModelViewSet):
+    pagination_class = StandardResultsSetPagination
     serializer_class = LabelSerializer
     permission_classes = [IsAuthenticated]
 
@@ -131,6 +132,7 @@ class LabelViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class ChecklistItemViewSet(viewsets.ModelViewSet):
+    pagination_class = StandardResultsSetPagination
     serializer_class = ChecklistItemSerializer
     permission_classes = [IsAuthenticated]
 
