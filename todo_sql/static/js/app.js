@@ -1166,3 +1166,43 @@ if (Notification.permission !== "granted" && Notification.permission !== "denied
         Notification.requestPermission();
     }, { once: true });
 }
+
+// --- View Toggle Logic ---
+const viewToggleBtn = document.getElementById('view-toggle');
+if (viewToggleBtn) {
+    const viewIcon = viewToggleBtn.querySelector('span');
+
+    function updateView(isList) {
+        if (isList) {
+            if (pinnedGrid) {
+                pinnedGrid.classList.remove('bento-grid');
+                pinnedGrid.classList.add('list-view');
+            }
+            if (otherGrid) {
+                otherGrid.classList.remove('bento-grid');
+                otherGrid.classList.add('list-view');
+            }
+            localStorage.setItem('viewMode', 'list');
+            viewIcon.textContent = 'grid_view';
+        } else {
+            if (pinnedGrid) {
+                pinnedGrid.classList.remove('list-view');
+                pinnedGrid.classList.add('bento-grid');
+            }
+            if (otherGrid) {
+                otherGrid.classList.remove('list-view');
+                otherGrid.classList.add('bento-grid');
+            }
+            localStorage.setItem('viewMode', 'grid');
+            viewIcon.textContent = 'view_agenda';
+        }
+    }
+
+    const savedView = localStorage.getItem('viewMode');
+    updateView(savedView === 'list');
+
+    viewToggleBtn.addEventListener('click', () => {
+        const isList = pinnedGrid && pinnedGrid.classList.contains('list-view');
+        updateView(!isList);
+    });
+}

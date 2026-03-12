@@ -64,10 +64,12 @@ class NoteSerializer(serializers.ModelSerializer):
         note = Note.objects.create(**validated_data)
         note.labels.set(labels)
 
-        if checklist_items_data:
-            ChecklistItem.objects.bulk_create([
-                ChecklistItem(note=note, **item_data) for item_data in checklist_items_data
-            ])
+        checklist_items_to_create = [
+            ChecklistItem(note=note, **item_data)
+            for item_data in checklist_items_data
+        ]
+        if checklist_items_to_create:
+            ChecklistItem.objects.bulk_create(checklist_items_to_create)
 
         return note
 
@@ -101,13 +103,21 @@ class NoteSerializer(serializers.ModelSerializer):
                     # Create new
                     if 'id' in item_data:
                         del item_data['id']
-                    new_items_to_create.append(ChecklistItem(note=instance, **item_data))
+                    # We don't save to DB yet, we just add it to a list for bulk_create
+                    new_item = ChecklistItem(note=instance, **item_data)
+                    posted_items.append(new_item)
 
+            # Bulk create new items
+            new_items_to_create = [item for item in posted_items if not item.id]
             if new_items_to_create:
-                ChecklistItem.objects.bulk_create(new_items_to_create)
+                created_items = ChecklistItem.objects.bulk_create(new_items_to_create)
+                # Ensure they are appended properly with ids if needed
+                # For `NoteSerializer.update` return value, it's generally fine if new items don't have PKs populated in `posted_items` immediately since they are saved.
+                # However, the user might want IDs in the response. `bulk_create` on SQLite might not set PKs in earlier Django versions, but in 5.0+ it often does or we might have to fetch them.
+                # Since the response re-serializes `instance`, it will fetch from DB again anyway, so it's fine.
 
             # Delete remaining
-            for item in existing_items.values():
-                item.delete()
+            if existing_items:
+                instance.checklist_items.filter(id__in=existing_items.keys()).delete()
 
         return instance

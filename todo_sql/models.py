@@ -9,6 +9,7 @@ class Label(models.Model):
         unique_together = ('user', 'name')
         verbose_name = 'Метка'
         verbose_name_plural = 'Метки'
+        ordering = ['name']
 
     def __str__(self):
         return self.name

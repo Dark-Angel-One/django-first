@@ -3,3 +3,5 @@ djangorestframework
 django-filter
 python-dotenv
 markdown
+gunicorn>=21.0.0
+whitenoise>=6.0.0
