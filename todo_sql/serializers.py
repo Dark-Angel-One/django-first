@@ -64,8 +64,10 @@ class NoteSerializer(serializers.ModelSerializer):
         note = Note.objects.create(**validated_data)
         note.labels.set(labels)
 
-        for item_data in checklist_items_data:
-            ChecklistItem.objects.create(note=note, **item_data)
+        if checklist_items_data:
+            ChecklistItem.objects.bulk_create([
+                ChecklistItem(note=note, **item_data) for item_data in checklist_items_data
+            ])
 
         return note
 
@@ -81,7 +83,7 @@ class NoteSerializer(serializers.ModelSerializer):
         if checklist_items_data is not None:
             # Smart update
             existing_items = {item.id: item for item in instance.checklist_items.all()}
-            posted_items = []
+            new_items_to_create = []
 
             for item_data in checklist_items_data:
                 item_id = item_data.get('id')
@@ -95,13 +97,14 @@ class NoteSerializer(serializers.ModelSerializer):
                     for attr, value in item_data.items():
                         setattr(item, attr, value)
                     item.save()
-                    posted_items.append(item)
                 else:
                     # Create new
                     if 'id' in item_data:
                         del item_data['id']
-                    new_item = ChecklistItem.objects.create(note=instance, **item_data)
-                    posted_items.append(new_item)
+                    new_items_to_create.append(ChecklistItem(note=instance, **item_data))
+
+            if new_items_to_create:
+                ChecklistItem.objects.bulk_create(new_items_to_create)
 
             # Delete remaining
             for item in existing_items.values():
