@@ -27,11 +27,12 @@ class NoteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Note.objects.filter(user=self.request.user).prefetch_related('labels', 'checklist_items')
 
-        if 'is_archived' not in self.request.query_params:
-            queryset = queryset.filter(is_archived=False)
+        if self.action == 'list':
+            if 'is_archived' not in self.request.query_params:
+                queryset = queryset.filter(is_archived=False)
 
-        if 'is_trashed' not in self.request.query_params:
-            queryset = queryset.filter(is_trashed=False)
+            if 'is_trashed' not in self.request.query_params:
+                queryset = queryset.filter(is_trashed=False)
 
         return queryset
 
