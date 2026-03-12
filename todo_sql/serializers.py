@@ -85,7 +85,7 @@ class NoteSerializer(serializers.ModelSerializer):
         if checklist_items_data is not None:
             # Smart update
             existing_items = {item.id: item for item in instance.checklist_items.all()}
-            posted_items = []
+            new_items_to_create = []
 
             for item_data in checklist_items_data:
                 item_id = item_data.get('id')
@@ -99,7 +99,6 @@ class NoteSerializer(serializers.ModelSerializer):
                     for attr, value in item_data.items():
                         setattr(item, attr, value)
                     item.save()
-                    posted_items.append(item)
                 else:
                     # Create new
                     if 'id' in item_data:
