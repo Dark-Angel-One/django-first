@@ -64,3 +64,27 @@ class ChecklistItemViewSetTest(TestCase):
         response = self.client.post('/api/v1/checklist-items/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(ChecklistItem.objects.filter(text='New Item', note=self.note).exists())
+
+    def test_update_note_removes_unspecified_items(self):
+        # Add another item
+        item2 = ChecklistItem.objects.create(note=self.note, text="Item 2", order=1)
+
+        # Prepare update data with only item2, effectively removing self.item
+        data = {
+            'checklist_items': [
+                {'id': item2.id, 'text': 'Updated Item 2', 'order': 0}
+            ]
+        }
+
+        # We need to use NoteViewSet or NoteSerializer directly as tests_checklist.py doesn't have a Note update test
+        # Let's use the API
+        response = self.client.patch(f'/api/v1/notes/{self.note.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify item2 is updated
+        item2.refresh_from_db()
+        self.assertEqual(item2.text, 'Updated Item 2')
+
+        # Verify self.item is deleted
+        self.assertFalse(ChecklistItem.objects.filter(id=self.item.id).exists())
+        self.assertEqual(self.note.checklist_items.count(), 1)

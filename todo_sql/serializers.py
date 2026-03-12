@@ -118,7 +118,7 @@ class NoteSerializer(serializers.ModelSerializer):
                 # Since the response re-serializes `instance`, it will fetch from DB again anyway, so it's fine.
 
             # Delete remaining
-            for item in existing_items.values():
-                item.delete()
+            if existing_items:
+                instance.checklist_items.filter(id__in=existing_items.keys()).delete()
 
         return instance
