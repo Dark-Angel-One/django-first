@@ -105,14 +105,13 @@ class NoteSerializer(serializers.ModelSerializer):
                         del item_data['id']
                     # We don't save to DB yet, we just add it to a list for bulk_create
                     new_item = ChecklistItem(note=instance, **item_data)
-                    posted_items.append(new_item)
+                    new_items_to_create.append(new_item)
 
             # Bulk create new items
-            new_items_to_create = [item for item in posted_items if not item.id]
             if new_items_to_create:
                 created_items = ChecklistItem.objects.bulk_create(new_items_to_create)
                 # Ensure they are appended properly with ids if needed
-                # For `NoteSerializer.update` return value, it's generally fine if new items don't have PKs populated in `posted_items` immediately since they are saved.
+                # For `NoteSerializer.update` return value, it's generally fine if new items don't have PKs populated immediately since they are saved.
                 # However, the user might want IDs in the response. `bulk_create` on SQLite might not set PKs in earlier Django versions, but in 5.0+ it often does or we might have to fetch them.
                 # Since the response re-serializes `instance`, it will fetch from DB again anyway, so it's fine.
 
