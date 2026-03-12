@@ -24,6 +24,10 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') {
       return;
   }
+  // Always go to network for HTML pages (navigations) to avoid Tailwind CDN issues
+  if (event.request.mode === 'navigate') {
+      return;
+  }
   event.respondWith(
     caches.match(event.request)
       .then(response => {
