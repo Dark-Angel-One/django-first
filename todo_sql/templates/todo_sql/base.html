@@ -462,5 +462,21 @@
             });
         }
     </script>
-    </body>
+
+
+    <!-- Tailwind CDN Service Worker Workaround -->
+    <script>
+        // Force Tailwind MutationObserver to wake up and parse the DOM
+        // especially when navigating between cached pages
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const hack = document.createElement('span');
+                hack.className = 'hidden';
+                document.body.appendChild(hack);
+                setTimeout(() => hack.remove(), 10);
+            }, 10);
+        });
+    </script>
+</body>
+
 </html>
