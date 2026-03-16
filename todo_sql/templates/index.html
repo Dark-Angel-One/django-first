@@ -1,0 +1,207 @@
+{% extends 'todo_sql/base.html' %}
+{% load static %}
+
+{% block search_bar %}
+<div class="relative group">
+   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+       <span class="material-symbols-outlined text-gray-500">search</span>
+   </div>
+   <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500 text-gray-800 dark:text-gray-200" placeholder="Поиск">
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Create Note Section -->
+{% if active_tab == 'notes' %}
+<div class="flex justify-center mb-8">
+    <div class="w-full max-w-2xl relative">
+        <!-- Collapsed State -->
+        <div id="create-note-collapsed" class="bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-md p-3 text-gray-500 font-medium cursor-text flex justify-between items-center transition-all" onclick="showCreateNote()">
+            <span>Заметка...</span>
+            <div class="flex gap-2 text-gray-500">
+                <button class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Новый список" onclick="event.stopPropagation(); showCreateNote(true);">
+                    <span class="material-symbols-outlined">check_box</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Expanded Form -->
+        <form id="create-note-form" class="hidden bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 transition-all relative">
+            <div class="flex justify-between items-start mb-2">
+                <input type="text" name="title" placeholder="Заголовок" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
+                <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="togglePinForm(this)">
+                    <span class="material-symbols-outlined icon-pin">keep</span>
+                </button>
+                <input type="hidden" name="is_pinned" id="form-is-pinned" value="false">
+            </div>
+
+            <!-- Text Content -->
+            <textarea name="content" id="note-content-input" placeholder="Заметка..." class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
+
+            <!-- Checklist Content (Hidden by default) -->
+            <div id="checklist-container" class="hidden space-y-2 mb-2">
+                <div id="checklist-items-form">
+                    <!-- Items go here -->
+                </div>
+                <div class="flex items-center gap-2 text-gray-500 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded" onclick="addChecklistItemInput()">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span class="text-sm">Пункт списка</span>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex justify-between items-center mt-4">
+                <div class="flex gap-1 text-gray-600 dark:text-gray-400 items-center">
+                    <!-- Color Picker -->
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Цвет фона" onclick="event.stopPropagation(); toggleMenu(this)">
+                            <span class="material-symbols-outlined text-[18px]">palette</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 flex gap-1 hidden menu-dropdown border dark:border-gray-700 z-20 flex-wrap w-48" onclick="event.stopPropagation()">
+                            <div class="w-6 h-6 rounded-full bg-white border cursor-pointer" onclick="setFormColor('white')"></div>
+                            <div class="w-6 h-6 rounded-full bg-red-200 cursor-pointer" onclick="setFormColor('red')"></div>
+                            <div class="w-6 h-6 rounded-full bg-orange-200 cursor-pointer" onclick="setFormColor('orange')"></div>
+                            <div class="w-6 h-6 rounded-full bg-yellow-200 cursor-pointer" onclick="setFormColor('yellow')"></div>
+                            <div class="w-6 h-6 rounded-full bg-green-200 cursor-pointer" onclick="setFormColor('green')"></div>
+                            <div class="w-6 h-6 rounded-full bg-teal-200 cursor-pointer" onclick="setFormColor('teal')"></div>
+                            <div class="w-6 h-6 rounded-full bg-blue-200 cursor-pointer" onclick="setFormColor('blue')"></div>
+                            <div class="w-6 h-6 rounded-full bg-indigo-200 cursor-pointer" onclick="setFormColor('darkblue')"></div>
+                            <div class="w-6 h-6 rounded-full bg-purple-200 cursor-pointer" onclick="setFormColor('purple')"></div>
+                            <div class="w-6 h-6 rounded-full bg-pink-200 cursor-pointer" onclick="setFormColor('pink')"></div>
+                            <div class="w-6 h-6 rounded-full bg-amber-200 cursor-pointer" onclick="setFormColor('brown')"></div>
+                            <div class="w-6 h-6 rounded-full bg-gray-200 cursor-pointer" onclick="setFormColor('gray')"></div>
+                        </div>
+                     </div>
+                     <input type="hidden" name="color" id="form-color" value="white">
+                     <input type="hidden" name="is_checklist" id="form-is-checklist" value="false">
+
+                     <!-- Label Picker -->
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Добавить ярлык" onclick="event.stopPropagation(); toggleMenu(this)">
+                            <span class="material-symbols-outlined text-[18px]">label</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-48 max-h-48 overflow-y-auto" onclick="event.stopPropagation()">
+                            {% for label in user_labels %}
+                            <label class="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="label_ids" value="{{ label.id }}" class="form-checkbox text-yellow-500 rounded focus:ring-0">
+                                <span class="text-sm text-gray-800 dark:text-gray-200 truncate">{{ label.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                     </div>
+
+                     <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Архивировать" onclick="toggleArchiveForm(this)">
+                        <span class="material-symbols-outlined text-[18px]">archive</span>
+                     </button>
+                     <input type="hidden" name="is_archived" id="form-is-archived" value="false">
+
+                     <!-- Reminder Picker -->
+                     <div class="relative">
+                        <button type="button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Напомнить" onclick="event.stopPropagation(); toggleMenu(this)">
+                            <span class="material-symbols-outlined text-[18px]">notifications</span>
+                        </button>
+                        <div class="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64" onclick="event.stopPropagation()">
+                             <input type="datetime-local" id="form-reminder-date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none">
+                        </div>
+                     </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleDiscardNote()">Отмена</button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onclick="handleSaveNote()">Сохранить</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes Grid -->
+<div class="p-4">
+    <!-- Pinned Notes -->
+    <div id="pinned-container" class="mb-8">
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="pinned-title">Закрепленные</h6>
+        <div class="bento-grid" id="pinned-notes">
+            {% for note in notes %}
+                {% if note.is_pinned %}
+                    {% include 'partials/note_card.html' with note=note %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Other Notes -->
+    <div id="others-container">
+        <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="others-title">Другие</h6>
+        <div class="bento-grid" id="other-notes">
+            {% for note in notes %}
+                {% if not note.is_pinned %}
+                    {% include 'partials/note_card.html' with note=note %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if not notes %}
+        <div id="empty-state" class="col-span-full text-center text-gray-500 py-10 w-full">
+            <span class="material-symbols-outlined text-6xl opacity-50">lightbulb</span>
+            <p class="mt-2 text-lg">Здесь будут ваши заметки</p>
+        </div>
+    {% endif %}
+
+    <!-- Pagination Controls -->
+    <div id="pagination-container">
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8 pb-4">
+            <nav class="inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Previous">
+                        <span class="material-symbols-outlined text-xl">chevron_left</span>
+                    </a>
+                {% else %}
+                    <span class="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+                        <span class="material-symbols-outlined text-xl">chevron_left</span>
+                    </span>
+                {% endif %}
+
+                <span class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Next">
+                        <span class="material-symbols-outlined text-xl">chevron_right</span>
+                    </a>
+                {% else %}
+                    <span class="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+                        <span class="material-symbols-outlined text-xl">chevron_right</span>
+                    </span>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm" onclick="closeEditModal(event)">
+    <div class="bg-white dark:bg-keep-bg-dark rounded-lg shadow-xl w-full max-w-2xl p-4 relative mx-4 transition-colors" id="edit-modal-content" onclick="event.stopPropagation()">
+        <!-- Dynamic Content -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+    // Initialize Global Variables for app.js
+    window.userLabels = [
+        {% for label in user_labels %}
+        {id: {{ label.id }}, name: "{{ label.name|escapejs }}"},
+        {% endfor %}
+    ];
+    window.activeTab = "{{ active_tab|default:'notes' }}";
+    window.activeLabel = "{{ active_label|default:''|escapejs }}";
+    window.staticAudioUrl = "{% static 'audio/pop.mp3' %}";
+</script>
+<script src="{% static 'js/app.js' %}"></script>
+{% endblock %}

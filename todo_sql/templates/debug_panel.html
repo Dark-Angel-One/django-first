@@ -1,0 +1,41 @@
+{% extends 'todo_sql/base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 animate-fade-in-up">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="bg-red-500 text-white p-4 flex items-center gap-3">
+            <span class="material-symbols-outlined text-3xl">bug_report</span>
+            <h1 class="text-2xl font-bold">Панель Администратора (Debug)</h1>
+        </div>
+        
+        <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Статистика БД</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-center">
+                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ total_users }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wide">Пользователей</p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg border border-green-100 dark:border-green-800 text-center">
+                    <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ total_notes }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wide">Всего заметок</p>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Быстрые действия</h2>
+            <div class="flex gap-4">
+                <a href="/admin/" class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-black text-white rounded transition-colors">
+                    <span class="material-symbols-outlined text-sm">settings</span>
+                    Открыть стандартную админку Django
+                </a>
+                <a href="/" class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded transition-colors">
+                    Вернуться на сайт
+                </a>
+            </div>
+
+            <div class="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                <strong>Информация о сессии:</strong> Вы вошли как <code>{{ request.user.username }}</code>. Права доступа: is_staff=<code>{{ request.user.is_staff }}</code>, is_superuser=<code>{{ request.user.is_superuser }}</code>.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

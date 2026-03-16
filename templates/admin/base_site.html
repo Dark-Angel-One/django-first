@@ -1,0 +1,147 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* ТИМЛИД: Хакерская "Матрица" тема для админки */
+    :root {
+        --primary-neon: #00ff00;
+        --bg-glass: rgba(0, 15, 0, 0.85);
+        --border-neon: #005500;
+    }
+
+    body {
+        background-color: #000 !important;
+        color: var(--primary-neon) !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        overflow-x: hidden;
+    }
+
+    /* Полупрозрачные стеклянные панели */
+    #header, .module, #content-main, .object-tools a, .submit-row {
+        background: var(--bg-glass) !important;
+        border: 1px solid var(--border-neon) !important;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+        backdrop-filter: blur(5px);
+    }
+
+    #header {
+        border-bottom: 2px solid var(--primary-neon) !important;
+    }
+
+    #branding h1 {
+        color: var(--primary-neon) !important;
+        text-shadow: 0 0 10px var(--primary-neon);
+        font-weight: bold;
+        letter-spacing: 2px;
+    }
+    #branding h1::before {
+        content: "> root@server:~# ";
+        opacity: 0.7;
+    }
+
+    a:link, a:visited {
+        color: #55ff55 !important;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+        text-shadow: 0 0 5px #55ff55;
+    }
+
+    /* Кнопки */
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: #002200 !important;
+        color: var(--primary-neon) !important;
+        border: 1px solid var(--primary-neon) !important;
+        text-transform: uppercase;
+        font-weight: bold;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .button:hover, input[type=submit]:hover, a.button:hover {
+        background: var(--primary-neon) !important;
+        color: #000 !important;
+        box-shadow: 0 0 15px var(--primary-neon);
+    }
+
+    /* Инпуты */
+    input, select, textarea {
+        background: rgba(0, 20, 0, 0.6) !important;
+        color: var(--primary-neon) !important;
+        border: 1px solid var(--primary-neon) !important;
+        padding: 5px;
+        outline: none;
+    }
+    input:focus, textarea:focus {
+        box-shadow: inset 0 0 5px var(--primary-neon);
+    }
+
+    /* Таблицы */
+    thead th {
+        background: #002200 !important;
+        color: var(--primary-neon) !important;
+        border-bottom: 1px solid var(--primary-neon) !important;
+    }
+    
+    tr.row1, tr.row2 {
+        background: transparent !important;
+    }
+    tr:hover {
+        background: rgba(0, 255, 0, 0.1) !important;
+    }
+
+    /* Канвас на заднем фоне */
+    #matrix-canvas {
+        position: fixed;
+        top: 0; 
+        left: 0; 
+        width: 100vw; 
+        height: 100vh;
+        z-index: -1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Анимация Матрицы -->
+    <canvas id="matrix-canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=<>?';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Эффект затухания
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px Courier New';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+
+    {{ block.super }}
+{% endblock %}

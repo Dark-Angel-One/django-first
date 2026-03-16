@@ -1,0 +1,250 @@
+<!-- ========================================================================= -->
+<!-- ФАЙЛ: Базовый шаблон (Каркас сайта, шапка, боковое меню, модалки)       -->
+<!-- ПУТЬ КУДА КЛАСТЬ: todo_sql/templates/todo_sql/base.html                 -->
+<!-- ВАЖНО: Этот файл ДОЛЖЕН начинаться с {% load static %} и <!DOCTYPE html> -->
+<!-- ========================================================================= -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy Notes</title>
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'keep-bg': '#ffffff',
+                        'keep-bg-dark': '#202124',
+                        'keep-sidebar': '#ffffff',
+                        'keep-sidebar-dark': '#202124',
+                        'keep-hover': '#f1f3f4',
+                        'keep-hover-dark': '#28292c',
+                        // Палитра заметок (Светлая тема)
+                        'note-red': '#f28b82',
+                        'note-orange': '#fbbc04',
+                        'note-yellow': '#fff475',
+                        'note-green': '#ccff90',
+                        'note-teal': '#a7ffeb',
+                        'note-blue': '#cbf0f8',
+                        'note-darkblue': '#aecbfa',
+                        'note-purple': '#d7aefb',
+                        'note-pink': '#fdcfe8',
+                        'note-brown': '#e6c9a8',
+                        'note-gray': '#e8eaed',
+                        // Палитра заметок (Темная тема)
+                        'note-dark-red': '#5c2b29',
+                        'note-dark-orange': '#614a19',
+                        'note-dark-yellow': '#635d19',
+                        'note-dark-green': '#345920',
+                        'note-dark-teal': '#16504b',
+                        'note-dark-blue': '#2d555e',
+                        'note-dark-darkblue': '#1e3a5f',
+                        'note-dark-purple': '#42275e',
+                        'note-dark-pink': '#5b2245',
+                        'note-dark-brown': '#442f19',
+                        'note-dark-gray': '#3c3f43',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="{% static 'todo_sql/css/style.css' %}">
+</head>
+<body class="bg-keep-bg dark:bg-keep-bg-dark text-gray-800 dark:text-gray-200 min-h-screen flex overflow-hidden transition-colors duration-200">
+    <div style="display:none;">{% csrf_token %}</div>
+
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="closeSidebarMobile()"></div>
+
+    {% if request.user.is_authenticated %}
+    <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex transition-all">
+        <div class="px-3">
+             <div class="flex items-center gap-4 pl-3 py-3 mb-2"></div>
+             <nav class="space-y-1">
+                 <a href="{% url 'index' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'notes' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_tab == 'notes' %}fill-1{% endif %}">lightbulb</span>
+                     <span class="sidebar-text font-medium">Заметки</span>
+                 </a>
+                 <a href="{% url 'reminders' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'reminders' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_tab == 'reminders' %}fill-1{% endif %}">notifications</span>
+                     <span class="sidebar-text font-medium">Напоминания</span>
+                 </a>
+
+                 <div id="sidebar-labels-container">
+                 {% for label in user_labels %}
+                 <a href="{% url 'label' label.name %}" data-label-id="{{ label.id }}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_label == label.name %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_label == label.name %}fill-1{% endif %}">label</span>
+                     <span class="sidebar-text font-medium truncate">{{ label.name }}</span>
+                 </a>
+                 {% endfor %}
+                 </div>
+
+                 <button class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark w-full text-left" onclick="openLabelModal()">
+                     <span class="material-symbols-outlined">edit</span>
+                     <span class="sidebar-text font-medium">Изменить ярлыки</span>
+                 </button>
+                 <a href="{% url 'archive' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'archive' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_tab == 'archive' %}fill-1{% endif %}">archive</span>
+                     <span class="sidebar-text font-medium">Архив</span>
+                 </a>
+                 <a href="{% url 'trash' %}" class="flex items-center gap-4 px-6 py-3 rounded-r-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark {% if active_tab == 'trash' %}bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100{% endif %}">
+                     <span class="material-symbols-outlined {% if active_tab == 'trash' %}fill-1{% endif %}">delete</span>
+                     <span class="sidebar-text font-medium">Корзина</span>
+                 </a>
+             </nav>
+        </div>
+    </aside>
+    {% endif %}
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        <header class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 bg-keep-bg dark:bg-keep-bg-dark">
+            <div class="flex items-center gap-4">
+                {% if request.user.is_authenticated %}
+                <button id="menu-btn" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                {% endif %}
+                <div class="flex items-center gap-2">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
+                    <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
+                </div>
+            </div>
+
+            <div class="flex-1 max-w-2xl mx-4 hidden md:block">
+                 {% if request.user.is_authenticated %}
+                 {% block search_bar %}
+                 <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-gray-500">search</span>
+                    </div>
+                    <input type="text" id="global-search" class="block w-full pl-12 pr-3 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:shadow-md transition-all outline-none placeholder-gray-500" placeholder="Поиск">
+                 </div>
+                 {% endblock %}
+                 {% endif %}
+            </div>
+
+            <div class="flex items-center gap-2">
+                {% if request.user.is_staff %}
+                <a href="{% url 'debug_panel' %}" class="p-2 rounded-full hover:bg-red-100 text-red-500 dark:hover:bg-red-900" title="Дебаг панель">
+                    <span class="material-symbols-outlined">bug_report</span>
+                </a>
+                <a href="/admin/" class="p-2 rounded-full hover:bg-green-100 text-green-500 dark:hover:bg-green-900" title="Админка">
+                    <span class="material-symbols-outlined">terminal</span>
+                </a>
+                {% endif %}
+                
+                {% if request.user.is_authenticated %}
+                <button id="view-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark hidden sm:block transition-colors" title="Вид">
+                    <span class="material-symbols-outlined">view_list</span>
+                </button>
+                {% endif %}
+
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors" title="Сменить тему">
+                    <span class="material-symbols-outlined">dark_mode</span>
+                </button>
+
+                {% if request.user.is_authenticated %}
+                <div class="relative ml-2 group">
+                    <button class="flex items-center gap-2 hover:bg-keep-hover dark:hover:bg-keep-hover-dark p-1 rounded-full px-3 py-1 transition-colors">
+                         <span class="text-sm font-medium">{{ request.user.username }}</span>
+                         <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
+                             {{ request.user.username.0|upper }}
+                         </div>
+                    </button>
+                     <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block hover:block z-50 transform origin-top-right transition-all">
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Выйти</button>
+                        </form>
+                        <button onclick="openDeleteAccountModal()" class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">Удалить аккаунт</button>
+                     </div>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-8" id="main-scroll">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- Модалка удаления аккаунта -->
+    <div id="delete-account-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex justify-center items-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-keep-bg-dark rounded-xl shadow-2xl w-96 p-6 transform scale-95 transition-transform duration-300" id="delete-account-content">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <span class="material-symbols-outlined text-red-600 text-2xl">warning</span>
+            </div>
+            <h3 class="text-lg font-bold text-center text-gray-900 dark:text-gray-100 mb-2">Удалить аккаунт?</h3>
+            <p class="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">Все ваши заметки, ярлыки и настройки будут удалены безвозвратно. Это действие нельзя отменить.</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeDeleteAccountModal()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors">Отмена</button>
+                <form action="{% url 'delete_account' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Да, удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка Ярлыков -->
+    <div id="label-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeLabelModal(event)">
+        <div class="bg-white dark:bg-keep-bg-dark rounded-xl shadow-2xl w-80 p-4 transform scale-95 transition-transform duration-300" id="label-modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">Изменить ярлыки</h3>
+            <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
+                <button class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors" onclick="createLabel()">
+                    <span class="material-symbols-outlined">add</span>
+                </button>
+                <input type="text" id="new-label-input" placeholder="Создать ярлык" class="flex-1 bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-500" onkeydown="if(event.key==='Enter') createLabel()">
+            </div>
+            <div class="max-h-60 overflow-y-auto space-y-2" id="label-list">
+                {% for label in user_labels %}
+                <div class="flex items-center gap-2 group" data-label-id="{{ label.id }}">
+                    <button class="text-gray-500 hover:text-red-500 transition-colors" onclick="deleteLabel({{ label.id }}, this)"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                    <span class="flex-1 text-gray-800 dark:text-gray-200 text-sm font-medium cursor-text" onclick="enableLabelRename({{ label.id }}, this)">{{ label.name }}</span>
+                    <button class="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick="enableLabelRename({{ label.id }}, this.previousElementSibling)"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex justify-end mt-4">
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onclick="handleLabelModalDone()">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script>
+        function openDeleteAccountModal() {
+            const m = document.getElementById('delete-account-modal');
+            const c = document.getElementById('delete-account-content');
+            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+        function closeDeleteAccountModal() {
+            const m = document.getElementById('delete-account-modal');
+            const c = document.getElementById('delete-account-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = themeToggleBtn.querySelector('span');
+        function updateTheme(isDark) {
+            if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); themeIcon.textContent = 'light_mode'; } 
+            else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); themeIcon.textContent = 'dark_mode'; }
+        }
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        updateTheme(savedTheme === 'dark' || (!savedTheme && systemDark));
+        themeToggleBtn.addEventListener('click', () => { updateTheme(!document.documentElement.classList.contains('dark')); });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

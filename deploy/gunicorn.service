@@ -1,0 +1,18 @@
+[Unit]
+Description=gunicorn daemon for todo_sql
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/todo_sql
+EnvironmentFile=/var/www/todo_sql/.env
+ExecStart=/var/www/todo_sql/venv/bin/gunicorn \
+          --access-logfile - \
+          --workers 3 \
+          --bind unix:/run/gunicorn.sock \
+          config.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

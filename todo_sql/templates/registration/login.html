@@ -1,0 +1,65 @@
+{% extends 'todo_sql/base.html' %}
+{% load form_tags %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+    <div class="max-w-md w-full bg-white dark:bg-[#202124] rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-xl animate-fade-in-up">
+        <div class="flex justify-center mb-6">
+            <img src="https://www.gstatic.com/images/branding/product/2x/keep_2020q4_48dp.png" alt="Logo" class="w-12 h-12">
+        </div>
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100">Вход</h2>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-sm font-medium">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- ТИМЛИД: Явное поле для логина (чтобы 100% было написано про Email) -->
+            <div>
+                <label for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Имя пользователя или Email
+                </label>
+                <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username" 
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors outline-none sm:text-sm">
+                {% if form.username.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.username.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ТИМЛИД: Явное поле для пароля -->
+            <div>
+                <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Пароль
+                </label>
+                <input type="password" name="password" autocomplete="current-password" required id="id_password" 
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors outline-none sm:text-sm">
+                {% if form.password.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.password.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center justify-end">
+                <a href="{% url 'password_reset' %}" class="text-sm font-bold text-yellow-600 hover:text-yellow-500 dark:text-yellow-400 transition-colors">
+                    Забыли пароль?
+                </a>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-gray-900 bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all shadow-md">
+                    Войти
+                </button>
+            </div>
+
+            <div class="text-center mt-6">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Нет аккаунта? </span>
+                <a href="{% url 'register' %}" class="text-sm font-bold text-yellow-600 hover:text-yellow-500 dark:text-yellow-400 transition-colors">Зарегистрироваться</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
