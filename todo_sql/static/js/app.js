@@ -61,6 +61,36 @@ document.addEventListener('DOMContentLoaded', () => {
     initSortable(); 
     updateSectionTitles();
 
+
+    // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ---
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    if (themeToggleBtn) {
+        const updateThemeIcon = () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = themeToggleBtn.querySelector('span');
+            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+
+            // Также обновляем мета-тег цвета
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
+            }
+        };
+
+        // Инициализация иконки при загрузке
+        updateThemeIcon();
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            if (isDark) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+            updateThemeIcon();
+        });
+    }
+
     // --- ЛОГИКА СМЕНЫ ВИДА (GRID/LIST) ---
     const viewToggleBtn = document.getElementById('view-toggle');
     if (viewToggleBtn) {
