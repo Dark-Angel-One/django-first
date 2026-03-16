@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 # 
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Добавляем стандартные пути для аутентификации (вход, выход, смена пароля)
+    path('accounts/password_reset/', auth_views.PasswordResetView.as_view(html_email_template_name='registration/password_reset_email.html'), name='password_reset'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('todo_sql.urls')),
 ]
