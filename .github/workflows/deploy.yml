@@ -1,0 +1,23 @@
+name: Auto Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/todo_sql
+            git pull origin main
+            sudo -u www-data venv/bin/pip install -r requirements.txt
+            sudo -u www-data venv/bin/python manage.py migrate
+            sudo -u www-data venv/bin/python manage.py collectstatic --noinput
+            systemctl restart gunicorn

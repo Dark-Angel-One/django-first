@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys  # ТИМЛИД: Добавили sys для проверки запущенных команд
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -120,3 +121,9 @@ STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
+
+# ТИМЛИД: Фикс для автотестов. 
+# Если мы запустили команду test, возвращаем стандартное хранилище статики Django, 
+# которому не нужен манифест файлов.
+if 'test' in sys.argv:
+    STORAGES['staticfiles']['BACKEND'] = 'django.contrib.staticfiles.storage.StaticFilesStorage'
