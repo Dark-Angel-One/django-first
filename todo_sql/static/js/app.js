@@ -588,6 +588,24 @@ async function openEditModal(id) {
     const archiveBtn = el('button', `p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors ${note.is_archived ? 'text-gray-900 bg-gray-200 dark:bg-gray-600' : ''}`, {type: 'button'});
     archiveBtn.onclick = () => toggleEditArchive(archiveBtn);
     archiveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">archive</span>';
+
+    const reminderWrapper = el('div', 'relative');
+    const reminderBtn = el('button', 'p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors', {type: 'button', title: 'Напомнить'});
+    reminderBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(reminderBtn); };
+    reminderBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">notifications</span>';
+
+    const reminderMenu = el('div', 'absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-2 hidden menu-dropdown border dark:border-gray-700 z-20 w-64');
+    reminderMenu.onclick = (e) => e.stopPropagation();
+
+    const reminderInput = el('input', 'w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none', {type: 'datetime-local', id: 'edit-reminder-date'});
+    if (note.reminder_date) {
+        // Формат datetime-local ожидает YYYY-MM-DDTHH:MM, а из API может приходить полная ISO-дата
+        reminderInput.value = note.reminder_date.substring(0, 16);
+    }
+    reminderMenu.appendChild(reminderInput);
+    reminderWrapper.append(reminderBtn, reminderMenu);
+    actionsLeft.append(reminderWrapper);
+
     actionsLeft.append(archiveBtn);
     footer.append(actionsLeft);
 
@@ -651,6 +669,8 @@ async function saveEditedNote(id) {
     const isArchived = document.getElementById('edit-is-archived').value === 'true';
     const isChecklist = document.getElementById('edit-is-checklist').value === 'true';
     const color = document.getElementById('edit-color').value;
+    const reminderDateInput = document.getElementById('edit-reminder-date');
+    const reminderDate = reminderDateInput ? reminderDateInput.value : null;
 
     let checklistItems = [];
     if (isChecklist) {
@@ -661,7 +681,7 @@ async function saveEditedNote(id) {
 
     await fetch(`/api/v1/notes/${id}/`, {
         method: 'PATCH', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-        body: JSON.stringify({ title, content, is_pinned: isPinned, is_archived: isArchived, color, checklist_items: isChecklist ? checklistItems : undefined })
+        body: JSON.stringify({ title, content, is_pinned: isPinned, is_archived: isArchived, color, checklist_items: isChecklist ? checklistItems : undefined, reminder_date: reminderDate || null })
     });
 
     closeEditModal({target: document.getElementById('edit-modal')});

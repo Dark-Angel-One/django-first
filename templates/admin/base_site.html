@@ -125,7 +125,7 @@
     }
 
     /* Показываем канвас только в темной теме */
-    html[data-theme="dark"] #matrix-canvas {
+    html[data-theme="dark"] #matrix-canvas, html.dark #matrix-canvas, [data-theme="dark"] #matrix-canvas {
         display: block; 
     }
 </style>
@@ -157,7 +157,10 @@
             requestAnimationFrame(draw);
 
             // Проверяем, активна ли темная тема. Если нет - НИЧЕГО НЕ СЧИТАЕМ (экономия ресурсов!)
-            if (document.documentElement.getAttribute('data-theme') !== 'dark') {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                           document.documentElement.classList.contains('dark') ||
+                           localStorage.getItem('theme') === 'dark';
+            if (!isDark) {
                 return;
             }
 
