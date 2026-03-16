@@ -223,28 +223,41 @@
 
     <!-- Скрипты -->
     <script>
-        function openDeleteAccountModal() {
-            const m = document.getElementById('delete-account-modal');
-            const c = document.getElementById('delete-account-content');
-            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
-        }
-        function closeDeleteAccountModal() {
-            const m = document.getElementById('delete-account-modal');
-            const c = document.getElementById('delete-account-content');
-            m.classList.add('opacity-0'); c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); }, 300);
+        // ТИМЛИД: Логика бокового меню (Гамбургер-кнопка)
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        if (menuBtn && sidebar) {
+            menuBtn.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    sidebar.classList.toggle('hidden');
+                    if(backdrop) backdrop.classList.toggle('hidden');
+                } else {
+                    if (sidebar.classList.contains('sidebar-expanded')) {
+                        sidebar.classList.remove('sidebar-expanded');
+                        sidebar.classList.add('sidebar-collapsed');
+                        document.querySelectorAll('.sidebar-text').forEach(el => el.classList.add('hidden'));
+                    } else {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        sidebar.classList.add('sidebar-expanded');
+                        setTimeout(() => {
+                            document.querySelectorAll('.sidebar-text').forEach(el => el.classList.remove('hidden'));
+                        }, 150);
+                    }
+                }
+            });
         }
 
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const themeIcon = themeToggleBtn.querySelector('span');
-        function updateTheme(isDark) {
-            if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); themeIcon.textContent = 'light_mode'; } 
-            else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); themeIcon.textContent = 'dark_mode'; }
+        function closeSidebarMobile() {
+            if (window.innerWidth < 768 && sidebar) {
+                sidebar.classList.add('hidden');
+                if(backdrop) backdrop.classList.add('hidden');
+            }
         }
-        const savedTheme = localStorage.getItem('theme');
-        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        updateTheme(savedTheme === 'dark' || (!savedTheme && systemDark));
-        themeToggleBtn.addEventListener('click', () => { updateTheme(!document.documentElement.classList.contains('dark')); });
-    </script>
+
+        function openDeleteAccountModal() {
+            const m = document.getElementById('delete-account-modal');
     {% block scripts %}{% endblock %}
 </body>
 </html>

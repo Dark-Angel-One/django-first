@@ -60,7 +60,8 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            # ТИМЛИД: ИСПРАВЛЕНИЕ БАГА! Указываем backend явно, так как у нас их 2 в settings.py
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('index')
     else:
         form = UserRegistrationForm()

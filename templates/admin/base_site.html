@@ -4,54 +4,68 @@
 
 {% block extrastyle %}
 <style>
-    /* ТИМЛИД: Хакерская "Матрица" тема для админки */
-    :root {
+    /* ТИМЛИД: Хакерская "Матрица" тема для админки. 
+       Ограничиваем ее ТОЛЬКО для темного режима! В светлом - классика. */
+    
+    /* 1. Настройка переменных и фона только для темного режима */
+    html[data-theme="dark"] {
         --primary-neon: #00ff00;
         --bg-glass: rgba(0, 15, 0, 0.85);
         --border-neon: #005500;
+        background-color: #000 !important;
     }
 
-    body {
-        background-color: #000 !important;
+    html[data-theme="dark"] body {
+        background-color: transparent !important;
         color: var(--primary-neon) !important;
         font-family: 'Courier New', Courier, monospace !important;
         overflow-x: hidden;
     }
 
-    /* Полупрозрачные стеклянные панели */
-    #header, .module, #content-main, .object-tools a, .submit-row {
+    /* 2. Полупрозрачные стеклянные панели */
+    html[data-theme="dark"] #header, 
+    html[data-theme="dark"] .module, 
+    html[data-theme="dark"] #content-main, 
+    html[data-theme="dark"] .object-tools a, 
+    html[data-theme="dark"] .submit-row {
         background: var(--bg-glass) !important;
         border: 1px solid var(--border-neon) !important;
         box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
         backdrop-filter: blur(5px);
     }
 
-    #header {
+    html[data-theme="dark"] #header {
         border-bottom: 2px solid var(--primary-neon) !important;
     }
 
-    #branding h1 {
+    html[data-theme="dark"] #branding h1 {
         color: var(--primary-neon) !important;
         text-shadow: 0 0 10px var(--primary-neon);
         font-weight: bold;
         letter-spacing: 2px;
     }
-    #branding h1::before {
+    html[data-theme="dark"] #branding h1::before {
         content: "> root@server:~# ";
         opacity: 0.7;
     }
 
-    a:link, a:visited {
+    /* 3. Ссылки */
+    html[data-theme="dark"] a:link, 
+    html[data-theme="dark"] a:visited {
         color: #55ff55 !important;
         text-decoration: none;
     }
-    a:hover {
+    html[data-theme="dark"] a:hover {
         text-decoration: underline;
         text-shadow: 0 0 5px #55ff55;
     }
 
-    /* Кнопки */
-    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+    /* 4. Кнопки */
+    html[data-theme="dark"] .button, 
+    html[data-theme="dark"] input[type=submit], 
+    html[data-theme="dark"] input[type=button], 
+    html[data-theme="dark"] .submit-row input, 
+    html[data-theme="dark"] a.button {
         background: #002200 !important;
         color: var(--primary-neon) !important;
         border: 1px solid var(--primary-neon) !important;
@@ -61,35 +75,41 @@
         transition: all 0.3s ease;
     }
     
-    .button:hover, input[type=submit]:hover, a.button:hover {
+    html[data-theme="dark"] .button:hover, 
+    html[data-theme="dark"] input[type=submit]:hover, 
+    html[data-theme="dark"] a.button:hover {
         background: var(--primary-neon) !important;
         color: #000 !important;
         box-shadow: 0 0 15px var(--primary-neon);
     }
 
-    /* Инпуты */
-    input, select, textarea {
+    /* 5. Инпуты */
+    html[data-theme="dark"] input, 
+    html[data-theme="dark"] select, 
+    html[data-theme="dark"] textarea {
         background: rgba(0, 20, 0, 0.6) !important;
         color: var(--primary-neon) !important;
         border: 1px solid var(--primary-neon) !important;
         padding: 5px;
         outline: none;
     }
-    input:focus, textarea:focus {
+    html[data-theme="dark"] input:focus, 
+    html[data-theme="dark"] textarea:focus {
         box-shadow: inset 0 0 5px var(--primary-neon);
     }
 
-    /* Таблицы */
-    thead th {
+    /* 6. Таблицы */
+    html[data-theme="dark"] thead th {
         background: #002200 !important;
         color: var(--primary-neon) !important;
         border-bottom: 1px solid var(--primary-neon) !important;
     }
     
-    tr.row1, tr.row2 {
+    html[data-theme="dark"] tr.row1, 
+    html[data-theme="dark"] tr.row2 {
         background: transparent !important;
     }
-    tr:hover {
+    html[data-theme="dark"] tr:hover {
         background: rgba(0, 255, 0, 0.1) !important;
     }
 
@@ -101,6 +121,12 @@
         width: 100vw; 
         height: 100vh;
         z-index: -1;
+        display: none; /* Скрыто по умолчанию (для светлой темы) */
+    }
+
+    /* Показываем канвас только в темной теме */
+    html[data-theme="dark"] #matrix-canvas {
+        display: block; 
     }
 </style>
 {% endblock %}
@@ -109,18 +135,47 @@
     <!-- Анимация Матрицы -->
     <canvas id="matrix-canvas"></canvas>
     <script>
+        // ТИМЛИД: Оптимизированный скрипт анимации (Больше не грузит систему!)
         const canvas = document.getElementById('matrix-canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=<>?';
         const fontSize = 16;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = Array(columns).fill(1);
+        let lastDrawTime = 0;
 
-        function draw() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Эффект затухания
+        // Используем requestAnimationFrame для плавной работы и снижения нагрузки на процессор
+        function draw(timestamp) {
+            requestAnimationFrame(draw);
+
+            // Проверяем, активна ли темная тема. Если нет - НИЧЕГО НЕ СЧИТАЕМ (экономия ресурсов!)
+            if (document.documentElement.getAttribute('data-theme') !== 'dark') {
+                return;
+            }
+
+            // Ограничиваем FPS (кадры в секунду) до ~30 (каждые 33мс), чтобы не перегружать страницу
+            if (timestamp - lastDrawTime < 33) return;
+            lastDrawTime = timestamp;
+
+            // Пересчитываем колонки, если размер окна изменился
+            const currentColumns = Math.floor(canvas.width / fontSize);
+            if (currentColumns !== drops.length) {
+                const oldDrops = drops;
+                drops = Array(currentColumns).fill(1);
+                for(let i = 0; i < Math.min(oldDrops.length, currentColumns); i++){
+                    drops[i] = oldDrops[i];
+                }
+            }
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#0F0';
             ctx.font = fontSize + 'px Courier New';
@@ -135,12 +190,9 @@
                 drops[i]++;
             }
         }
-        setInterval(draw, 33);
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        
+        // Запускаем цикл анимации
+        requestAnimationFrame(draw);
     </script>
 
     {{ block.super }}

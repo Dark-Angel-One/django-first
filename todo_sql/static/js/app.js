@@ -58,7 +58,36 @@ function initSortable() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initSortable(); updateSectionTitles();
+    initSortable(); 
+    updateSectionTitles();
+
+    // --- ЛОГИКА СМЕНЫ ВИДА (GRID/LIST) ---
+    const viewToggleBtn = document.getElementById('view-toggle');
+    if (viewToggleBtn) {
+        const icon = viewToggleBtn.querySelector('span');
+        let isListView = localStorage.getItem('isListView') === 'true';
+        
+        const applyView = () => {
+            if (!pinnedGrid || !otherGrid) return;
+            if (isListView) {
+                pinnedGrid.classList.remove('bento-grid'); pinnedGrid.classList.add('list-view');
+                otherGrid.classList.remove('bento-grid'); otherGrid.classList.add('list-view');
+                icon.textContent = 'grid_view'; 
+            } else {
+                pinnedGrid.classList.add('bento-grid'); pinnedGrid.classList.remove('list-view');
+                otherGrid.classList.add('bento-grid'); otherGrid.classList.remove('list-view');
+                icon.textContent = 'view_list'; 
+            }
+        };
+        
+        applyView(); 
+        
+        viewToggleBtn.addEventListener('click', () => {
+            isListView = !isListView;
+            localStorage.setItem('isListView', isListView);
+            applyView();
+        });
+    }
 });
 
 function updateCardPinVisuals(card, isPinned) {
@@ -145,7 +174,6 @@ function resetCreateForm() {
     createNoteForm.querySelectorAll('input[name="label_ids"]').forEach(cb => cb.checked = false);
     document.getElementById('checklist-items-form').innerHTML = '';
     
-    // ТИМЛИД: Очищаем новые Tailwind классы
     createNoteForm.className = 'hidden bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 transition-all duration-300 relative';
     document.getElementById('form-color').value = 'white';
     
@@ -171,7 +199,6 @@ function toggleArchiveForm(btn) {
 
 function setFormColor(color) {
     document.getElementById('form-color').value = color;
-    // ТИМЛИД: Используем новые красивые классы
     const tailwindClassMap = {
         'white': 'bg-white dark:bg-keep-bg-dark', 'red': 'bg-note-red dark:bg-note-dark-red', 'orange': 'bg-note-orange dark:bg-note-dark-orange',
         'yellow': 'bg-note-yellow dark:bg-note-dark-yellow', 'green': 'bg-note-green dark:bg-note-dark-green', 'teal': 'bg-note-teal dark:bg-note-dark-teal',
@@ -236,7 +263,6 @@ function prependNoteToGrid(note) {
     updateSectionTitles();
 }
 
-// ТИМЛИД: Полностью переписан рендеринг карточки в JS, чтобы стили ТОЧНО совпадали с HTML
 function createNoteCardHTML(note) {
     const el = (tag, classes = '') => {
         const e = document.createElement(tag);
@@ -343,7 +369,6 @@ async function performOptimisticRemove(id, apiPromise) {
     const parent = card.parentNode;
     const nextSibling = card.nextSibling;
     
-    // Плавное удаление
     card.style.transform = 'scale(0.9)';
     card.style.opacity = '0';
     setTimeout(() => { card.remove(); updateSectionTitles(); }, 200);
@@ -472,7 +497,6 @@ function renderPagination(data) {
     wrapper.appendChild(nav); container.appendChild(wrapper);
 }
 
-// Modal and View logic functions remain largely similar but with added transition classes
 async function openEditModal(id) {
     const res = await fetch(`/api/v1/notes/${id}/`);
     const note = await res.json();
@@ -480,7 +504,6 @@ async function openEditModal(id) {
     const content = document.getElementById('edit-modal-content');
     content.innerHTML = '';
     
-    // ... [Большая часть генерации модалки идентична старому коду, за исключением классов цвета] ...
     const el = (tag, classes = '', props = {}) => {
         const e = document.createElement(tag);
         if(classes) e.className = classes;
@@ -554,7 +577,7 @@ async function openEditModal(id) {
 }
 
 function closeEditModal(e) {
-    if(e.target.id === 'edit-modal') {
+    if(e && e.target && e.target.id === 'edit-modal') {
         const modal = document.getElementById('edit-modal');
         const content = document.getElementById('edit-modal-content');
         modal.classList.add('opacity-0');
@@ -592,7 +615,6 @@ function getColorClass(c) {
 }
 
 async function saveEditedNote(id) {
-    // Collect data and save (same logic as before)
     const title = document.getElementById('edit-title').value;
     const content = document.getElementById('edit-content') ? document.getElementById('edit-content').value : '';
     const isPinned = document.getElementById('edit-is-pinned').value === 'true';
@@ -613,7 +635,7 @@ async function saveEditedNote(id) {
     });
 
     closeEditModal({target: document.getElementById('edit-modal')});
-    loadNotes(globalSearch.value);
+    loadNotes(globalSearch ? globalSearch.value : '');
 }
 
 function createChecklistItemElement(text, isChecked, id=null) {
@@ -623,7 +645,6 @@ function createChecklistItemElement(text, isChecked, id=null) {
     if(id) input.dataset.id = id; input.dataset.checked = isChecked; return div;
 }
 
-// ... Оставляем остальной функционал (Checklists, Reminders) как есть, только добавляем анимации при удалении
 function showToast(message) {
     const div = document.createElement('div');
     div.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl z-50 transition-all duration-300 flex items-center gap-2 transform translate-y-10 opacity-0';
@@ -650,6 +671,76 @@ function toggleEditPin(btn) {
     icon.classList.toggle('fill-1');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Event delegation logic
-});
+// --- ЛОГИКА ДЛЯ ЯРЛЫКОВ (ТЕГОВ) ---
+function openLabelModal() {
+    const m = document.getElementById('label-modal');
+    const c = document.getElementById('label-modal-content');
+    m.classList.remove('hidden');
+    setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); c.classList.add('scale-100'); }, 10);
+}
+
+function closeLabelModal(e) {
+    if (e && e.target && e.target.id !== 'label-modal' && e.type === 'click') return;
+    const m = document.getElementById('label-modal');
+    const c = document.getElementById('label-modal-content');
+    m.classList.add('opacity-0'); c.classList.remove('scale-100'); c.classList.add('scale-95');
+    setTimeout(() => { m.classList.add('hidden'); }, 300);
+}
+
+function handleLabelModalDone() {
+    closeLabelModal();
+    location.reload(); // Перезагружаем страницу, чтобы обновить боковое меню
+}
+
+async function createLabel() {
+    const input = document.getElementById('new-label-input');
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+        const res = await fetch('/api/v1/labels/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify({name})
+        });
+        if (res.ok) {
+            input.value = '';
+            location.reload(); 
+        } else {
+            const data = await res.json();
+            if (data.name) showToast(data.name[0]);
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function deleteLabel(id, btn) {
+    try {
+        const res = await fetch(`/api/v1/labels/${id}/`, { method: 'DELETE', headers: { 'X-CSRFToken': csrftoken } });
+        if (res.ok) {
+            btn.closest('.group').remove();
+        }
+    } catch(e) { console.error(e); }
+}
+
+function enableLabelRename(id, span) {
+    const oldName = span.textContent;
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = oldName; 
+    input.className = 'flex-1 bg-transparent outline-none text-gray-800 dark:text-gray-200 text-sm font-medium border-b border-yellow-500';
+    span.replaceWith(input);
+    input.focus();
+    
+    const save = async () => {
+        const newName = input.value.trim();
+        if (newName && newName !== oldName) {
+            await fetch(`/api/v1/labels/${id}/`, {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify({name: newName})
+            });
+        }
+        const newSpan = document.createElement('span');
+        newSpan.className = 'flex-1 text-gray-800 dark:text-gray-200 text-sm font-medium cursor-text';
+        newSpan.textContent = newName || oldName;
+        newSpan.onclick = () => enableLabelRename(id, newSpan);
+        input.replaceWith(newSpan);
+    };
+    
+    input.onblur = save;
+    input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
+}
