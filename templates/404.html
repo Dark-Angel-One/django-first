@@ -8,20 +8,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Страница не найдена - Academy Notes</title>
+    <link rel="icon" href="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
-<body class="bg-[#f1f3f4] text-gray-800 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl p-8 shadow-xl text-center">
+<body class="bg-[#f1f3f4] dark:bg-[#202124] text-gray-800 dark:text-gray-200 min-h-screen flex items-center justify-center p-4 transition-colors duration-200">
+    <div class="max-w-md w-full bg-white dark:bg-[#28292c] rounded-2xl p-8 shadow-xl text-center border dark:border-gray-700">
         <span class="material-symbols-outlined text-6xl text-yellow-500 mb-4 block">search_off</span>
-        <h1 class="text-4xl font-bold mb-2">404</h1>
-        <h2 class="text-xl font-medium mb-6 text-gray-600">Страница не найдена</h2>
-        <p class="mb-8 text-gray-500">
+        <h1 class="text-4xl font-bold mb-2 dark:text-gray-100">404</h1>
+        <h2 class="text-xl font-medium mb-6 text-gray-600 dark:text-gray-300">Страница не найдена</h2>
+        <p class="mb-8 text-gray-500 dark:text-gray-400">
             Возможно, вы опечатались в адресе или заметка была удалена.
         </p>
-        <a href="/" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-bold rounded-lg text-gray-900 bg-yellow-400 hover:bg-yellow-500 transition-colors shadow-md">
+        <a href="/" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-bold rounded-lg text-gray-900 bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-600 transition-colors shadow-md">
             Вернуться на главную
         </a>
     </div>

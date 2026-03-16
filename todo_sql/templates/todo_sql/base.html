@@ -10,6 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academy Notes</title>
+    <link rel="icon" href="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png">
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#ffffff">
     <!-- Tailwind CSS -->
@@ -266,6 +267,18 @@
 
         function openDeleteAccountModal() {
             const m = document.getElementById('delete-account-modal');
+            const c = document.getElementById('delete-account-content');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); c.classList.add('scale-100'); }, 10);
+        }
+
+        function closeDeleteAccountModal() {
+            const m = document.getElementById('delete-account-modal');
+            const c = document.getElementById('delete-account-content');
+            m.classList.add('opacity-0'); c.classList.remove('scale-100'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
