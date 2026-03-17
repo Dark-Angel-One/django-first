@@ -540,6 +540,7 @@ async function openEditModal(id) {
 
     const header = el('div', 'flex justify-between items-start mb-2');
     const titleInput = el('input', 'w-full bg-transparent outline-none text-xl font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200', { type: 'text', placeholder: 'Заголовок', id: 'edit-title', value: note.title });
+    titleInput.onkeydown = (e) => { if(e.key === 'Enter') { e.preventDefault(); saveEditedNote(id); } };
     const pinBtn = el('button', 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full transition-colors', {type: 'button'});
     pinBtn.onclick = () => toggleEditPin(pinBtn);
     const pinIcon = el('span', `material-symbols-outlined icon-pin ${note.is_pinned ? 'fill-1' : ''}`); pinIcon.textContent = 'keep'; pinBtn.appendChild(pinIcon);
@@ -557,6 +558,7 @@ async function openEditModal(id) {
         content.append(el('textarea', 'hidden', {id: 'edit-content'}));
     } else {
         const textarea = el('textarea', 'w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[150px]', { id: 'edit-content', placeholder: 'Заметка', value: note.content });
+textarea.onkeydown = (e) => { if(e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveEditedNote(id); } };
         content.append(textarea);
     }
 
@@ -649,9 +651,18 @@ function setEditColor(color) {
 
 function getColorClass(c) {
     const map = {
-        'white': 'bg-white', 'red': 'bg-note-red', 'orange': 'bg-note-orange', 'yellow': 'bg-note-yellow', 'green': 'bg-note-green', 
-        'teal': 'bg-note-teal', 'blue': 'bg-note-blue', 'darkblue': 'bg-note-darkblue', 'purple': 'bg-note-purple', 'pink': 'bg-note-pink', 
-        'brown': 'bg-note-brown', 'gray': 'bg-note-gray'
+        'white': 'bg-white dark:bg-keep-bg-dark border dark:border-gray-600', 
+        'red': 'bg-note-red dark:bg-note-dark-red border-transparent', 
+        'orange': 'bg-note-orange dark:bg-note-dark-orange border-transparent', 
+        'yellow': 'bg-note-yellow dark:bg-note-dark-yellow border-transparent', 
+        'green': 'bg-note-green dark:bg-note-dark-green border-transparent', 
+        'teal': 'bg-note-teal dark:bg-note-dark-teal border-transparent', 
+        'blue': 'bg-note-blue dark:bg-note-dark-blue border-transparent', 
+        'darkblue': 'bg-note-darkblue dark:bg-note-dark-darkblue border-transparent', 
+        'purple': 'bg-note-purple dark:bg-note-dark-purple border-transparent', 
+        'pink': 'bg-note-pink dark:bg-note-dark-pink border-transparent', 
+        'brown': 'bg-note-brown dark:bg-note-dark-brown border-transparent', 
+        'gray': 'bg-note-gray dark:bg-note-dark-gray border-transparent'
     };
     return map[c];
 }
