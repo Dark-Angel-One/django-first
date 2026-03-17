@@ -28,7 +28,7 @@
         <!-- Expanded Form -->
         <form id="create-note-form" class="hidden bg-white dark:bg-keep-bg-dark border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 transition-all relative">
             <div class="flex justify-between items-start mb-2">
-                <input type="text" name="title" placeholder="Заголовок" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
+                <input type="text" name="title" placeholder="Заголовок" onkeydown="if(event.key === 'Enter') { event.preventDefault(); handleSaveNote(); }" class="w-full bg-transparent outline-none text-lg font-medium placeholder-gray-500 text-gray-800 dark:text-gray-200">
                 <button type="button" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-full" onclick="togglePinForm(this)">
                     <span class="material-symbols-outlined icon-pin">keep</span>
                 </button>
@@ -36,8 +36,7 @@
             </div>
 
             <!-- Text Content -->
-            <textarea name="content" id="note-content-input" placeholder="Заметка..." class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
-
+            <textarea name="content" id="note-content-input" placeholder="Заметка..." onkeydown="if(event.key === 'Enter' && event.ctrlKey) { event.preventDefault(); handleSaveNote(); }" class="w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]"></textarea>
             <!-- Checklist Content (Hidden by default) -->
             <div id="checklist-container" class="hidden space-y-2 mb-2">
                 <div id="checklist-items-form">
