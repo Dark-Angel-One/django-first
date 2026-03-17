@@ -122,10 +122,10 @@
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 {% endif %}
-                <div class="flex items-center gap-2">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
-                    <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
-                </div>
+                <a href="{% url 'index' %}" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
+    <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
+    <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
+</a>
             </div>
 
             <div class="flex-1 max-w-2xl mx-4 hidden md:block">
@@ -157,7 +157,7 @@
                 </button>
                 {% endif %}
 
-                <button id="theme-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors" title="Сменить тему">
+                <button id="theme-toggle" onclick="toggleTheme()" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors" title="Сменить тему">
                     <span class="material-symbols-outlined">dark_mode</span>
                 </button>
 
