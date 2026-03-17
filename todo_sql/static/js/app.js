@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSortable(); 
     updateSectionTitles();
 
-
     // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ---
     const themeToggleBtn = document.getElementById('theme-toggle');
     if (themeToggleBtn) {
@@ -76,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateThemeIcon();
 
-        // Убираем старые конфликты и делаем чистый клик
         themeToggleBtn.onclick = function(e) {
             e.preventDefault();
             const isDark = document.documentElement.classList.toggle('dark');
@@ -558,7 +556,7 @@ async function openEditModal(id) {
         content.append(el('textarea', 'hidden', {id: 'edit-content'}));
     } else {
         const textarea = el('textarea', 'w-full bg-transparent outline-none resize-none overflow-hidden placeholder-gray-500 text-sm text-gray-800 dark:text-gray-200 min-h-[150px]', { id: 'edit-content', placeholder: 'Заметка', value: note.content });
-textarea.onkeydown = (e) => { if(e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveEditedNote(id); } };
+        textarea.onkeydown = (e) => { if(e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveEditedNote(id); } };
         content.append(textarea);
     }
 
@@ -595,7 +593,6 @@ textarea.onkeydown = (e) => { if(e.key === 'Enter' && e.ctrlKey) { e.preventDefa
 
     const reminderInput = el('input', 'w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-2 text-sm text-gray-800 dark:text-gray-200 outline-none', {type: 'datetime-local', id: 'edit-reminder-date'});
     if (note.reminder_date) {
-        // Формат datetime-local ожидает YYYY-MM-DDTHH:MM, а из API может приходить полная ISO-дата
         reminderInput.value = note.reminder_date.substring(0, 16);
     }
     reminderMenu.appendChild(reminderInput);
@@ -695,7 +692,7 @@ async function saveEditedNote(id) {
 
 function createChecklistItemElement(text, isChecked, id=null) {
     const div = document.createElement('div'); div.className = 'flex items-center gap-2 group/item';
-    div.innerHTML = `<span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span><input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-blue-500 transition-colors py-1" placeholder="Пункт списка" value=""><span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all">close</span>`;
+    div.innerHTML = `<span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span><input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-blue-500 transition-colors py-1" placeholder="Пункт списка" value=""><span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all" onclick="this.parentElement.remove()">close</span>`;
     const input = div.querySelector('input'); input.value = text;
     if(id) input.dataset.id = id; input.dataset.checked = isChecked; return div;
 }
