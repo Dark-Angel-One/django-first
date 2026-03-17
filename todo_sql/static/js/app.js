@@ -68,27 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateThemeIcon = () => {
             const isDark = document.documentElement.classList.contains('dark');
             const icon = themeToggleBtn.querySelector('span');
-            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
-
-            // Также обновляем мета-тег цвета
+            if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
-            }
+            if (metaThemeColor) metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
         };
 
-        // Инициализация иконки при загрузке
         updateThemeIcon();
 
-        themeToggleBtn.addEventListener('click', () => {
+        // Убираем старые конфликты и делаем чистый клик
+        themeToggleBtn.onclick = function(e) {
+            e.preventDefault();
             const isDark = document.documentElement.classList.toggle('dark');
-            if (isDark) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
             updateThemeIcon();
-        });
+        };
     }
 
     // --- ЛОГИКА СМЕНЫ ВИДА (GRID/LIST) ---
@@ -794,11 +788,3 @@ function enableLabelRename(id, span) {
     input.onblur = save;
     input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
 }
-window.toggleTheme = function() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    const icon = document.querySelector('#theme-toggle span');
-    if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
-};

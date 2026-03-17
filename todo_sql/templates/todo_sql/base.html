@@ -75,7 +75,7 @@
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="closeSidebarMobile()"></div>
 
     {% if request.user.is_authenticated %}
-    <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex transition-all">
+    <aside id="sidebar" class="sidebar-expanded flex flex-col h-screen border-r border-gray-200 dark:border-gray-700 bg-keep-sidebar dark:bg-keep-sidebar-dark pt-2 pb-4 hidden md:flex absolute md:relative z-50 transition-all">
         <div class="px-3">
              <div class="flex items-center gap-4 pl-3 py-3 mb-2"></div>
              <nav class="space-y-1">
@@ -157,9 +157,9 @@
                 </button>
                 {% endif %}
 
-                <button id="theme-toggle" onclick="toggleTheme()" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors" title="Сменить тему">
-                    <span class="material-symbols-outlined">dark_mode</span>
-                </button>
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-keep-hover dark:hover:bg-keep-hover-dark transition-colors" title="Сменить тему">
+					<span class="material-symbols-outlined">dark_mode</span>
+				</button>
 
                 {% if request.user.is_authenticated %}
                 <div class="relative ml-2 group">

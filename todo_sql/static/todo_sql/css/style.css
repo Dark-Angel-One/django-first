@@ -62,3 +62,23 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #bdc1c6; }
 .dark ::-webkit-scrollbar-thumb { background: #5f6368; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #80868b; }
+/* Адаптивная сетка для заметок */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .bento-grid {
+        /* На телефонах показываем по одной заметке в ряд, чтобы не было сплющивания */
+        grid-template-columns: 1fr;
+    }
+    
+    /* Делаем поиск на мобилках чуть компактнее */
+    header {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
