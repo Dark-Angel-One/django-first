@@ -252,7 +252,7 @@ function addChecklistItemInput(value = '', isChecked = false, insertAfterNode = 
         <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span>
         <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
             placeholder="Пункт списка" value="${value}" data-checked="${isChecked}">
-        <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
+        <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all" onclick="this.parentElement.remove()">close</span>
     `;
     if (insertAfterNode && insertAfterNode.parentNode === container) {
         if (insertAfterNode.nextSibling) container.insertBefore(div, insertAfterNode.nextSibling);
@@ -794,3 +794,11 @@ function enableLabelRename(id, span) {
     input.onblur = save;
     input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
 }
+window.toggleTheme = function() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const icon = document.querySelector('#theme-toggle span');
+    if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
+};
