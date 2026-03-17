@@ -62,34 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSectionTitles();
 
 
-    // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ---
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    if (themeToggleBtn) {
-        const updateThemeIcon = () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = themeToggleBtn.querySelector('span');
-            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
 
-            // Также обновляем мета-тег цвета
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
-            }
-        };
-
-        // Инициализация иконки при загрузке
-        updateThemeIcon();
-
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            if (isDark) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
-            updateThemeIcon();
-        });
-    }
 
     // --- ЛОГИКА СМЕНЫ ВИДА (GRID/LIST) ---
     const viewToggleBtn = document.getElementById('view-toggle');
@@ -252,7 +225,7 @@ function addChecklistItemInput(value = '', isChecked = false, insertAfterNode = 
         <span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span>
         <input type="text" class="checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-gray-300 py-1"
             placeholder="Пункт списка" value="${value}" data-checked="${isChecked}">
-        <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity">close</span>
+        <span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600 opacity-0 group-hover/item:opacity-100 transition-opacity" onclick="this.parentElement.remove()">close</span>
     `;
     if (insertAfterNode && insertAfterNode.parentNode === container) {
         if (insertAfterNode.nextSibling) container.insertBefore(div, insertAfterNode.nextSibling);
@@ -690,7 +663,7 @@ async function saveEditedNote(id) {
 
 function createChecklistItemElement(text, isChecked, id=null) {
     const div = document.createElement('div'); div.className = 'flex items-center gap-2 group/item';
-    div.innerHTML = `<span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span><input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-blue-500 transition-colors py-1" placeholder="Пункт списка" value=""><span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all">close</span>`;
+    div.innerHTML = `<span class="material-symbols-outlined text-gray-400 cursor-pointer select-none">${isChecked ? 'check_box' : 'check_box_outline_blank'}</span><input type="text" class="edit-checklist-item-input bg-transparent outline-none flex-1 text-sm text-gray-800 dark:text-gray-200 border-b border-transparent focus:border-blue-500 transition-colors py-1" placeholder="Пункт списка" value=""><span class="material-symbols-outlined text-gray-400 cursor-pointer hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all" onclick="this.parentElement.remove()">close</span>`;
     const input = div.querySelector('input'); input.value = text;
     if(id) input.dataset.id = id; input.dataset.checked = isChecked; return div;
 }

@@ -122,7 +122,7 @@
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 {% endif %}
-                <div class="flex items-center gap-2">
+                <a href="{% url 'index' %}" class="flex items-center gap-2 cursor-pointer">
                     <img src="https://www.gstatic.com/images/branding/product/1x/keep_2020q4_48dp.png" alt="Logo" class="w-10 h-10">
                     <span class="text-xl text-gray-600 dark:text-gray-300 hidden sm:block">Заметки</span>
                 </div>
@@ -272,12 +272,43 @@
             setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); c.classList.add('scale-100'); }, 10);
         }
 
+
         function closeDeleteAccountModal() {
             const m = document.getElementById('delete-account-modal');
             const c = document.getElementById('delete-account-content');
             m.classList.add('opacity-0'); c.classList.remove('scale-100'); c.classList.add('scale-95');
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
+
+        // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            const updateThemeIcon = () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                const icon = themeToggleBtn.querySelector('span');
+                if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+
+                // Также обновляем мета-тег цвета
+                const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                if (metaThemeColor) {
+                    metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
+                }
+            };
+
+            // Инициализация иконки при загрузке
+            updateThemeIcon();
+
+            themeToggleBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.toggle('dark');
+                if (isDark) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+                updateThemeIcon();
+            });
+        }
+
     </script>
     {% block scripts %}{% endblock %}
 </body>
