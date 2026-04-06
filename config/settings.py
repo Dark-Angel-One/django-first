@@ -95,6 +95,13 @@ if os.getenv('DB_HOST'):
 if os.getenv('DB_PORT'):
     DATABASES['default']['PORT'] = os.getenv('DB_PORT')
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
