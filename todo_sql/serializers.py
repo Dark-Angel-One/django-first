@@ -86,6 +86,7 @@ class NoteSerializer(serializers.ModelSerializer):
             # Smart update
             existing_items = {item.id: item for item in instance.checklist_items.all()}
             new_items_to_create = []
+            items_to_update = []
 
             for item_data in checklist_items_data:
                 item_id = item_data.get('id')
@@ -98,7 +99,7 @@ class NoteSerializer(serializers.ModelSerializer):
                     item = existing_items.pop(item_id)
                     for attr, value in item_data.items():
                         setattr(item, attr, value)
-                    item.save()
+                    items_to_update.append(item)
                 else:
                     # Create new
                     if 'id' in item_data:
@@ -107,10 +108,13 @@ class NoteSerializer(serializers.ModelSerializer):
                     new_item = ChecklistItem(note=instance, **item_data)
                     new_items_to_create.append(new_item)
 
+            # Bulk update existing items
+            if items_to_update:
+                ChecklistItem.objects.bulk_update(items_to_update, ['text', 'is_checked', 'order'])
+
             # Bulk create new items
             if new_items_to_create:
-                created_items = ChecklistItem.objects.bulk_create(new_items_to_create)
-                # Ensure they are appended properly with ids if needed
+                ChecklistItem.objects.bulk_create(new_items_to_create)
                 # For `NoteSerializer.update` return value, it's generally fine if new items don't have PKs populated immediately since they are saved.
                 # However, the user might want IDs in the response. `bulk_create` on SQLite might not set PKs in earlier Django versions, but in 5.0+ it often does or we might have to fetch them.
                 # Since the response re-serializes `instance`, it will fetch from DB again anyway, so it's fine.
