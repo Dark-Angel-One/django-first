@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.db.models import Q
+from django.core.cache import cache
 import random
 
 from .models import Note
@@ -47,8 +48,8 @@ def delete_account(request):
 # ТИМЛИД: Дебаг панель только для админов (staff)
 @user_passes_test(lambda u: u.is_staff)
 def debug_panel(request):
-    total_users = User.objects.count()
-    total_notes = Note.objects.count()
+    total_users = cache.get_or_set('debug_total_users', User.objects.count, 60)
+    total_notes = cache.get_or_set('debug_total_notes', Note.objects.count, 60)
     context = {
         'total_users': total_users,
         'total_notes': total_notes,
