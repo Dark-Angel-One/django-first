@@ -49,7 +49,8 @@ class Note(models.Model):
 
     @property
     def preview_checklist_items(self):
-        return self.checklist_items.all()[:5]
+        # Use list() to take advantage of prefetch_related if available
+        return list(self.checklist_items.all())[:5]
 
     class Meta:
         verbose_name = 'Заметка'
