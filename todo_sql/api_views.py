@@ -36,6 +36,15 @@ class NoteViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+
+    @action(detail=False, methods=['get'])
+    def check_updates(self, request):
+        last_sync = request.query_params.get('last_sync')
+        if last_sync:
+            has_updates = Note.objects.filter(user=request.user, updated_at__gt=last_sync).exists()
+            return Response({'has_updates': has_updates})
+        return Response({'has_updates': False})
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 

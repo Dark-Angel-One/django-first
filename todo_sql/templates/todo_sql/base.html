@@ -269,6 +269,33 @@
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
     </script>
+
+    <script>
+        // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ГЛОБАЛЬНО ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            if (themeToggleBtn) {
+                const updateThemeIcon = () => {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    const icon = themeToggleBtn.querySelector('span');
+                    if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+
+                    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                    if (metaThemeColor) metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
+                };
+
+                updateThemeIcon();
+
+                themeToggleBtn.onclick = function(e) {
+                    e.preventDefault();
+                    const isDark = document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                    updateThemeIcon();
+                };
+            }
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
