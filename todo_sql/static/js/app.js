@@ -61,28 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSortable(); 
     updateSectionTitles();
 
-    // --- ЛОГИКА ТЕМЫ (СВЕТЛАЯ/ТЕМНАЯ) ---
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    if (themeToggleBtn) {
-        const updateThemeIcon = () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = themeToggleBtn.querySelector('span');
-            if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) metaThemeColor.setAttribute('content', isDark ? '#202124' : '#ffffff');
-        };
-
-        updateThemeIcon();
-
-        themeToggleBtn.onclick = function(e) {
-            e.preventDefault();
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            updateThemeIcon();
-        };
-    }
-
     // --- ЛОГИКА СМЕНЫ ВИДА (GRID/LIST) ---
     const viewToggleBtn = document.getElementById('view-toggle');
     if (viewToggleBtn) {
@@ -796,3 +774,18 @@ function enableLabelRename(id, span) {
     input.onblur = save;
     input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
 }
+
+// --- CLOUD SYNC LOGIC ---
+let lastSyncTime = new Date().toISOString();
+setInterval(async () => {
+    try {
+        const res = await fetch(`/api/v1/notes/check_updates/?last_sync=${encodeURIComponent(lastSyncTime)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.has_updates) {
+                lastSyncTime = new Date().toISOString();
+                loadNotes(globalSearch ? globalSearch.value : '');
+            }
+        }
+    } catch(e) {}
+}, 5000);
