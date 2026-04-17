@@ -104,7 +104,17 @@
 </div>
 {% endif %}
 
-<div class="p-4">
+<div class="p-4" id="main-content-area">
+    <!-- ТИМЛИД: Динамические заголовки для Корзины и Архива -->
+    <div id="tab-header-container" class="max-w-2xl mx-auto mb-6 hidden">
+        <div id="trash-header" class="hidden text-center italic text-sm text-gray-600 dark:text-gray-400">
+            Заметки удаляются из корзины через 7 дней.
+            <button class="ml-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium not-italic transition-colors" onclick="emptyTrash()">Очистить корзину</button>
+        </div>
+        <div id="archive-header" class="hidden text-center text-sm text-gray-600 dark:text-gray-400">
+            Здесь хранятся ваши заархивированные заметки
+        </div>
+    </div>
     <div id="pinned-container" class="mb-8">
         <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-2 hidden" id="pinned-title">Закрепленные</h6>
         <div class="bento-grid" id="pinned-notes">
@@ -134,12 +144,12 @@
         </div>
     {% endif %}
 
-    <div id="pagination-container">
+    <div id="pagination-container" class="pb-24">
         {% if is_paginated %}
         <div class="flex justify-center mt-8 pb-4">
             <nav class="inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Previous">
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"  class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Previous">
                         <span class="material-symbols-outlined text-xl">chevron_left</span>
                     </a>
                 {% else %}
@@ -153,7 +163,7 @@
                 </span>
 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Next">
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"  class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors" aria-label="Next">
                         <span class="material-symbols-outlined text-xl">chevron_right</span>
                     </a>
                 {% else %}
