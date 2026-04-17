@@ -42,7 +42,7 @@ const globalSearch = document.getElementById('global-search');
 function initSortable() {
     if (!pinnedGrid || !otherGrid) return;
     const opts = {
-        group: 'notes', animation: 150, delay: 100, draggable: '.note-card',
+        group: 'notes', animation: 250, delay: 100, draggable: '.note-card', ghostClass: 'opacity-50', dragClass: 'shadow-2xl',
         onEnd: function (evt) {
             const item = evt.item;
             const newContainerId = item.parentElement.id;
@@ -456,7 +456,7 @@ async function loadNotes(urlOrQuery) {
         } else {
             [...notes].reverse().forEach(note => prependNoteToGrid(note));
         }
-        updateSectionTitles(); renderPagination(data);
+        updateSectionTitles(); updateHeaders(); renderPagination(data);
     } catch (e) { console.error("Failed to load notes", e); }
 }
 
@@ -472,16 +472,42 @@ function renderPagination(data) {
     const totalPages = Math.ceil(data.count / 12);
     if (totalPages <= 1) { container.innerHTML = ''; return; }
 
-    const createBtn = (isNext, url, disabled) => {
+    const getFrontendUrl = (pageNum) => {
+        let url = window.activeTab === 'archive' ? '/archive/' : window.activeTab === 'trash' ? '/trash/' : '/';
+        url += `?page=${pageNum}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('q')) { url += `&q=${urlParams.get('q')}`; }
+        return url;
+    };
+
+    const getApiUrl = (pageNum) => {
+        let url = window.activeTab === 'archive' ? '/api/v1/notes/?is_archived=true' : window.activeTab === 'trash' ? '/api/v1/notes/?is_trashed=true' : '/api/v1/notes/?is_archived=false&is_trashed=false';
+        if (window.activeTab === 'label' && window.activeLabel && window.userLabels) {
+            const labelObj = window.userLabels.find(l => l.name === window.activeLabel);
+            if (labelObj) url = `/api/v1/notes/?labels=${labelObj.id}&is_archived=false&is_trashed=false`;
+        }
+        url += `&page=${pageNum}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('q')) { url += `&search=${urlParams.get('q')}`; }
+        return url;
+    };
+
+    const nextFrontendUrl = data.next ? getFrontendUrl(currentPage + 1) : null;
+    const prevFrontendUrl = data.previous ? getFrontendUrl(currentPage - 1) : null;
+
+    const nextApiUrl = data.next ? getApiUrl(currentPage + 1) : null;
+    const prevApiUrl = data.previous ? getApiUrl(currentPage - 1) : null;
+
+    const createBtn = (isNext, frontendUrl, apiUrl, disabled) => {
         if (disabled) {
             const span = document.createElement('span'); span.className = "p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed";
             span.innerHTML = `<span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>`;
             return span;
         } else {
-            const a = document.createElement('a'); a.href = url;
+            const a = document.createElement('a'); a.href = frontendUrl;
             a.className = "p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors";
             a.innerHTML = `<span class="material-symbols-outlined text-xl">${isNext ? 'chevron_right' : 'chevron_left'}</span>`;
-            a.onclick = (e) => { e.preventDefault(); loadNotes(url); };
+            a.onclick = (e) => { e.preventDefault(); loadNotes(apiUrl); window.history.pushState({}, '', frontendUrl); };
             return a;
         }
     };
@@ -489,11 +515,11 @@ function renderPagination(data) {
     container.innerHTML = '';
     const wrapper = document.createElement('div'); wrapper.className = "flex justify-center mt-8 pb-4 animate-fade-in-up";
     const nav = document.createElement('nav'); nav.className = "inline-flex items-center p-1 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg";
-    nav.appendChild(createBtn(false, data.previous, !data.previous));
+    nav.appendChild(createBtn(false, prevFrontendUrl, prevApiUrl, !data.previous));
     const pageInfo = document.createElement('span'); pageInfo.className = "px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200";
     pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
     nav.appendChild(pageInfo);
-    nav.appendChild(createBtn(true, data.next, !data.next));
+    nav.appendChild(createBtn(true, nextFrontendUrl, nextApiUrl, !data.next));
     wrapper.appendChild(nav); container.appendChild(wrapper);
 }
 
@@ -789,3 +815,94 @@ setInterval(async () => {
         }
     } catch(e) {}
 }, 5000);
+
+function updateHeaders() {
+    const tabHeaderContainer = document.getElementById('tab-header-container');
+    const trashHeader = document.getElementById('trash-header');
+    const archiveHeader = document.getElementById('archive-header');
+
+    if (tabHeaderContainer && trashHeader && archiveHeader) {
+        if (window.activeTab === 'trash') {
+            tabHeaderContainer.classList.remove('hidden');
+            trashHeader.classList.remove('hidden');
+            archiveHeader.classList.add('hidden');
+        } else if (window.activeTab === 'archive') {
+            tabHeaderContainer.classList.remove('hidden');
+            archiveHeader.classList.remove('hidden');
+            trashHeader.classList.add('hidden');
+        } else {
+            tabHeaderContainer.classList.add('hidden');
+            trashHeader.classList.add('hidden');
+            archiveHeader.classList.add('hidden');
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', updateHeaders);
+
+async function emptyTrash() {
+    if (!confirm('Очистить корзину? Все заметки в ней будут удалены навсегда.')) return;
+    try {
+        const res = await fetch('/api/v1/notes/empty_trash/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+        });
+        if (res.ok) {
+            pinnedGrid.innerHTML = '';
+            otherGrid.innerHTML = '';
+            updateSectionTitles();
+            showToast('Корзина очищена');
+        } else {
+            showToast('Ошибка при очистке корзины');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Ошибка при очистке корзины');
+    }
+}
+
+function checkReminders() {
+    const now = new Date();
+    const cards = document.querySelectorAll('.note-card[data-reminder]');
+    cards.forEach(card => {
+        const reminderDateStr = card.dataset.reminder;
+        if (!reminderDateStr) return;
+
+        const reminderDate = new Date(reminderDateStr);
+        const diffMs = now - reminderDate;
+
+        if (diffMs > 0 && card.dataset.reminderAlerted !== 'true') {
+            card.dataset.reminderAlerted = 'true';
+
+            const title = card.querySelector('h3') ? card.querySelector('h3').textContent : 'Напоминание';
+
+            try {
+                if (window.staticAudioUrl) {
+                    new Audio(window.staticAudioUrl).play().catch(e => console.log('Audio error', e));
+                } else {
+                    new Audio('/static/audio/pop.mp3').play().catch(e => console.log('Audio error', e));
+                }
+            } catch (e) {}
+
+            showToast(`Напоминание: ${title}`);
+
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    new Notification("Todo SQL", { body: `Напоминание: ${title}` });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("Todo SQL", { body: `Напоминание: ${title}` });
+                        }
+                    });
+                }
+            }
+
+            const badge = card.querySelector('.material-symbols-outlined.text-\\[14px\\]');
+            if (badge && badge.parentElement) {
+                badge.parentElement.classList.remove('bg-black/5', 'dark:bg-white/10');
+                badge.parentElement.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900/30', 'dark:text-red-200');
+            }
+        }
+    });
+}
+setInterval(checkReminders, 30000);
